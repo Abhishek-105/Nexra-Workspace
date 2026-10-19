@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -249,7 +248,7 @@ export default function EmployeeProjectsPage() {
     }, []);
 
     useEffect(() => {
-        loadProjects();
+        void loadProjects();
     }, [loadProjects]);
 
     const filteredProjects = useMemo(() => {
@@ -302,25 +301,25 @@ export default function EmployeeProjectsPage() {
     if (loading) {
         return (
             <main className="min-h-screen bg-[#F5F7F6] p-4 sm:p-5 lg:p-6">
-                <div className="mx-auto max-w-7xl animate-pulse space-y-5">
+                <div className="mx-auto max-w-7xl animate-pulse space-y-6">
                     <div className="h-32 rounded-2xl bg-[#DDE4DF]" />
 
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         {Array.from({ length: 4 }).map((_, index) => (
                             <div
                                 key={index}
-                                className="h-24 rounded-2xl bg-white"
+                                className="min-h-[120px] rounded-2xl bg-white"
                             />
                         ))}
                     </div>
 
-                    <div className="h-16 rounded-2xl bg-white" />
+                    <div className="h-20 rounded-2xl bg-white" />
 
-                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                         {Array.from({ length: 6 }).map((_, index) => (
                             <div
                                 key={index}
-                                className="h-56 rounded-2xl bg-white"
+                                className="min-h-[280px] rounded-2xl bg-white"
                             />
                         ))}
                     </div>
@@ -333,12 +332,12 @@ export default function EmployeeProjectsPage() {
         return (
             <main className="min-h-screen bg-[#F5F7F6] p-4 sm:p-5 lg:p-6">
                 <div className="mx-auto max-w-3xl">
-                    <div className="rounded-2xl border border-red-200 bg-white p-7 text-center shadow-sm">
+                    <div className="rounded-2xl border border-red-200 bg-white p-8 text-center shadow-sm">
                         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 text-lg font-bold text-red-600">
                             !
                         </div>
 
-                        <h1 className="mt-4 text-lg font-bold text-[#18201C]">
+                        <h1 className="mt-5 text-lg font-bold text-[#18201C]">
                             Unable to load projects
                         </h1>
 
@@ -348,8 +347,8 @@ export default function EmployeeProjectsPage() {
 
                         <button
                             type="button"
-                            onClick={loadProjects}
-                            className="mt-5 rounded-xl bg-[#166534] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#14532D]"
+                            onClick={() => void loadProjects()}
+                            className="mt-6 rounded-xl bg-[#166534] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#14532D]"
                         >
                             Try Again
                         </button>
@@ -360,15 +359,16 @@ export default function EmployeeProjectsPage() {
     }
 
     return (
-        <main className="min-h-screen bg-[#F5F7F6] p-4 pt-2 sm:p-5 sm:pt-3 lg:p-6 lg:pt-3">
-            <div className="mx-auto max-w-7xl space-y-5">
-                <section className="relative overflow-hidden rounded-2xl bg-[#171A19] px-5 py-4 shadow-sm sm:px-6 sm:py-4">
-                    <div className="absolute -right-20 -top-24 h-56 w-56 rounded-full bg-[#166534]/20 blur-3xl" />
-                    <div className="absolute -bottom-28 left-1/3 h-56 w-56 rounded-full bg-[#22C55E]/10 blur-3xl" />
+        <main className="min-h-screen bg-[#F5F7F6] p-4 pt-3 sm:p-5 sm:pt-4 lg:p-6 lg:pt-4">
+            <div className="mx-auto max-w-7xl space-y-6">
+                {/* Page header */}
+                <section className="relative overflow-hidden rounded-2xl bg-[#171A19] px-6 py-6 shadow-sm sm:px-7">
+                    <div className="pointer-events-none absolute -right-20 -top-24 h-56 w-56 rounded-full bg-[#166534]/20 blur-3xl" />
+                    <div className="pointer-events-none absolute -bottom-28 left-1/3 h-56 w-56 rounded-full bg-[#22C55E]/10 blur-3xl" />
 
-                    <div className="relative flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                        <div>
-                            <div className="mb-1.5 flex items-center gap-2 text-[10px] font-semibold text-[#8C9891]">
+                    <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="min-w-0">
+                            <div className="mb-3 flex items-center gap-2 text-xs font-medium text-[#8C9891]">
                                 <span>Workspace</span>
                                 <span className="text-[#4E5953]">/</span>
                                 <span className="text-[#D4DBD7]">
@@ -376,18 +376,18 @@ export default function EmployeeProjectsPage() {
                                 </span>
                             </div>
 
-                            <div className="flex items-center gap-3">
-                                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#166534] text-white shadow-lg shadow-black/20">
+                            <div className="flex items-center gap-4">
+                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#166534] text-white shadow-lg shadow-black/20">
                                     <FolderIcon />
                                 </div>
 
-                                <div>
-                                    <h1 className="text-xl font-bold tracking-tight text-white">
+                                <div className="min-w-0">
+                                    <h1 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
                                         My Projects
                                     </h1>
 
-                                    <p className="mt-0.5 text-[11px] text-[#9AA69F] sm:text-xs">
-                                        View your assigned projects.
+                                    <p className="mt-1.5 text-sm leading-5 text-[#A4AEA8]">
+                                        Review your assigned projects, timelines, and current status.
                                     </p>
                                 </div>
                             </div>
@@ -395,7 +395,7 @@ export default function EmployeeProjectsPage() {
 
                         <Link
                             href="/employee/tasks"
-                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-white/10"
+                            className="inline-flex w-fit shrink-0 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
                         >
                             View My Tasks
                             <ArrowIcon />
@@ -403,80 +403,74 @@ export default function EmployeeProjectsPage() {
                     </div>
                 </section>
 
-                <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    <div className="rounded-2xl border border-[#E1E7E3] bg-white p-4 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-[#7A857F]">
-                                    Total Projects
-                                </p>
-                                <p className="mt-1.5 text-2xl font-bold tracking-tight text-[#18201C]">
-                                    {projects.length}
-                                </p>
-                            </div>
+                {/* Project statistics */}
+                <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="flex min-h-[120px] items-center justify-between gap-4 rounded-2xl border border-[#E1E7E3] bg-white p-5 shadow-sm">
+                        <div>
+                            <p className="text-xs font-bold uppercase tracking-wider text-[#7A857F]">
+                                Total Projects
+                            </p>
+                            <p className="mt-3 text-2xl font-bold leading-none tracking-tight text-[#18201C]">
+                                {projects.length}
+                            </p>
+                        </div>
 
-                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#ECFDF3] text-[#166534]">
-                                <FolderIcon />
-                            </div>
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#ECFDF3] text-[#166534]">
+                            <FolderIcon />
                         </div>
                     </div>
 
-                    <div className="rounded-2xl border border-[#E1E7E3] bg-white p-4 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-[#7A857F]">
-                                    Active
-                                </p>
-                                <p className="mt-1.5 text-2xl font-bold tracking-tight text-[#18201C]">
-                                    {activeCount}
-                                </p>
-                            </div>
+                    <div className="flex min-h-[120px] items-center justify-between gap-4 rounded-2xl border border-[#E1E7E3] bg-white p-5 shadow-sm">
+                        <div>
+                            <p className="text-xs font-bold uppercase tracking-wider text-[#7A857F]">
+                                Active
+                            </p>
+                            <p className="mt-3 text-2xl font-bold leading-none tracking-tight text-[#18201C]">
+                                {activeCount}
+                            </p>
+                        </div>
 
-                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#ECFDF3] text-[#166534]">
-                                <CheckIcon />
-                            </div>
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#ECFDF3] text-[#166534]">
+                            <CheckIcon />
                         </div>
                     </div>
 
-                    <div className="rounded-2xl border border-[#E1E7E3] bg-white p-4 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-[#7A857F]">
-                                    Completed
-                                </p>
-                                <p className="mt-1.5 text-2xl font-bold tracking-tight text-[#18201C]">
-                                    {completedCount}
-                                </p>
-                            </div>
+                    <div className="flex min-h-[120px] items-center justify-between gap-4 rounded-2xl border border-[#E1E7E3] bg-white p-5 shadow-sm">
+                        <div>
+                            <p className="text-xs font-bold uppercase tracking-wider text-[#7A857F]">
+                                Completed
+                            </p>
+                            <p className="mt-3 text-2xl font-bold leading-none tracking-tight text-[#18201C]">
+                                {completedCount}
+                            </p>
+                        </div>
 
-                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
-                                <CheckIcon />
-                            </div>
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                            <CheckIcon />
                         </div>
                     </div>
 
-                    <div className="rounded-2xl border border-[#E1E7E3] bg-white p-4 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-[#7A857F]">
-                                    On Hold
-                                </p>
-                                <p className="mt-1.5 text-2xl font-bold tracking-tight text-[#18201C]">
-                                    {onHoldCount}
-                                </p>
-                            </div>
+                    <div className="flex min-h-[120px] items-center justify-between gap-4 rounded-2xl border border-[#E1E7E3] bg-white p-5 shadow-sm">
+                        <div>
+                            <p className="text-xs font-bold uppercase tracking-wider text-[#7A857F]">
+                                On Hold
+                            </p>
+                            <p className="mt-3 text-2xl font-bold leading-none tracking-tight text-[#18201C]">
+                                {onHoldCount}
+                            </p>
+                        </div>
 
-                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-                                <ClockIcon />
-                            </div>
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                            <ClockIcon />
                         </div>
                     </div>
                 </section>
 
-                <section className="rounded-2xl border border-[#E1E7E3] bg-white p-4 shadow-sm">
-                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-                        <div className="relative flex-1">
-                            <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8A958F]">
+                {/* Search and status filter */}
+                <section className="rounded-2xl border border-[#E1E7E3] bg-white p-5 shadow-sm sm:p-6">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+                        <div className="relative min-w-0 flex-1">
+                            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#8A958F]">
                                 <SearchIcon />
                             </span>
 
@@ -487,7 +481,7 @@ export default function EmployeeProjectsPage() {
                                     setSearch(event.target.value)
                                 }
                                 placeholder="Search projects..."
-                                className="w-full rounded-xl border border-[#E1E7E3] bg-[#F5F7F6] py-2.5 pl-10 pr-4 text-sm text-[#18201C] outline-none transition placeholder:text-[#8A958F] focus:border-[#166534] focus:bg-white focus:ring-2 focus:ring-[#166534]/10"
+                                className="w-full rounded-xl border border-[#E1E7E3] bg-[#F5F7F6] py-3 pl-11 pr-4 text-sm text-[#18201C] outline-none transition placeholder:text-[#8A958F] focus:border-[#166534] focus:bg-white focus:ring-2 focus:ring-[#166534]/10"
                             />
                         </div>
 
@@ -496,7 +490,7 @@ export default function EmployeeProjectsPage() {
                             onChange={(event) =>
                                 setStatusFilter(event.target.value)
                             }
-                            className="rounded-xl border border-[#E1E7E3] bg-[#F5F7F6] px-4 py-2.5 text-sm font-medium text-[#36413B] outline-none transition focus:border-[#166534] focus:bg-white focus:ring-2 focus:ring-[#166534]/10 lg:w-44"
+                            className="w-full rounded-xl border border-[#E1E7E3] bg-[#F5F7F6] px-4 py-3 text-sm font-medium text-[#36413B] outline-none transition focus:border-[#166534] focus:bg-white focus:ring-2 focus:ring-[#166534]/10 lg:w-48"
                         >
                             <option value="all">All Statuses</option>
                             <option value="active">Active</option>
@@ -511,14 +505,14 @@ export default function EmployeeProjectsPage() {
                                     setSearch("");
                                     setStatusFilter("all");
                                 }}
-                                className="rounded-xl border border-[#E1E7E3] px-4 py-2.5 text-sm font-bold text-[#59645E] transition hover:bg-[#F5F7F6]"
+                                className="rounded-xl border border-[#E1E7E3] px-5 py-3 text-sm font-semibold text-[#59645E] transition hover:bg-[#F5F7F6]"
                             >
-                                Clear
+                                Clear filters
                             </button>
                         )}
                     </div>
 
-                    <div className="mt-2.5 flex items-center justify-between text-[11px] text-[#8A958F]">
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-[#E8ECEA] pt-4 text-xs text-[#8A958F]">
                         <span>
                             Showing{" "}
                             <span className="font-bold text-[#36413B]">
@@ -539,19 +533,20 @@ export default function EmployeeProjectsPage() {
                     </div>
                 </section>
 
+                {/* Empty state or project cards */}
                 {filteredProjects.length === 0 ? (
                     <section className="rounded-2xl border border-[#E1E7E3] bg-white px-6 py-14 text-center shadow-sm">
                         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-[#ECFDF3] text-[#166534]">
                             <FolderIcon />
                         </div>
 
-                        <h2 className="mt-4 text-base font-bold text-[#18201C]">
+                        <h2 className="mt-5 text-base font-bold text-[#18201C]">
                             {projects.length === 0
                                 ? "No projects assigned"
                                 : "No projects found"}
                         </h2>
 
-                        <p className="mx-auto mt-1.5 max-w-md text-sm leading-6 text-[#6B7770]">
+                        <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#6B7770]">
                             {projects.length === 0
                                 ? "Projects assigned to you by your manager will appear here."
                                 : "Try changing your search or status filter."}
@@ -564,79 +559,83 @@ export default function EmployeeProjectsPage() {
                                     setSearch("");
                                     setStatusFilter("all");
                                 }}
-                                className="mt-5 rounded-xl bg-[#166534] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#14532D]"
+                                className="mt-6 rounded-xl bg-[#166534] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#14532D]"
                             >
                                 Reset Filters
                             </button>
                         )}
                     </section>
                 ) : (
-                    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    <section className="grid items-stretch gap-5 sm:grid-cols-2 xl:grid-cols-3">
                         {filteredProjects.map((project) => (
                             <Link
                                 key={project.id}
                                 href={`/employee/projects/${project.id}`}
-                                className="group flex min-h-[250px] flex-col overflow-hidden rounded-2xl border border-[#E1E7E3] bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[#C8D4CD] hover:shadow-md"
+                                className="group flex min-h-[285px] flex-col overflow-hidden rounded-2xl border border-[#E1E7E3] bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[#C8D4CD] hover:shadow-md"
                             >
-                                <div className="h-1 bg-[#166534]" />
+                                <div className="h-1 shrink-0 bg-[#166534]" />
 
-                                <div className="flex flex-1 flex-col p-4">
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#ECFDF3] text-sm font-bold text-[#166534] transition group-hover:bg-[#166534] group-hover:text-white">
-                                            {getProjectName(project)
-                                                .charAt(0)
-                                                .toUpperCase()}
+                                <div className="flex flex-1 flex-col p-5 sm:p-6">
+                                    {/* Project title and status */}
+                                    <div className="flex items-start gap-4">
+                                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#ECFDF3] text-[#166534] transition group-hover:bg-[#166534] group-hover:text-white">
+                                            <FolderIcon />
                                         </div>
 
-                                        <span
-                                            className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${getStatusClasses(
-                                                project.status
-                                            )}`}
-                                        >
-                                            {normalizeStatus(project.status)}
-                                        </span>
+                                        <div className="min-w-0 flex-1 pt-0.5">
+                                            <h2 className="break-words text-base font-bold leading-6 tracking-tight text-[#18201C] transition group-hover:text-[#166534]">
+                                                {getProjectName(project)}
+                                            </h2>
+
+                                            <div className="mt-3">
+                                                <span
+                                                    className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold ${getStatusClasses(
+                                                        project.status
+                                                    )}`}
+                                                >
+                                                    {normalizeStatus(project.status)}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    <div className="mt-4">
-                                        <h2 className="line-clamp-1 text-base font-bold tracking-tight text-[#18201C] transition group-hover:text-[#166534]">
-                                            {getProjectName(project)}
-                                        </h2>
+                                    {/* Project description */}
+                                    <p className="mt-5 line-clamp-3 min-h-[60px] text-sm leading-5 text-[#6B7770]">
+                                        {project.description ||
+                                            "No project description available."}
+                                    </p>
 
-                                        <p className="mt-1.5 line-clamp-2 min-h-[40px] text-xs leading-5 text-[#6B7770]">
-                                            {project.description ||
-                                                "No project description available."}
-                                        </p>
-                                    </div>
-
-                                    <div className="mt-auto grid grid-cols-2 gap-3 border-t border-[#E8EEEA] pt-4">
-                                        <div>
-                                            <p className="text-[9px] font-bold uppercase tracking-wider text-[#8A958F]">
+                                    {/* Project dates */}
+                                    <div className="mt-auto grid grid-cols-2 gap-4 border-t border-[#E8EEEA] pt-5">
+                                        <div className="min-w-0">
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-[#8A958F]">
                                                 Start Date
                                             </p>
 
-                                            <p className="mt-1 text-[11px] font-semibold text-[#4A564F]">
+                                            <p className="mt-2 break-words text-sm font-semibold text-[#36413B]">
                                                 {formatDate(project.start_date)}
                                             </p>
                                         </div>
 
-                                        <div>
-                                            <p className="text-[9px] font-bold uppercase tracking-wider text-[#8A958F]">
+                                        <div className="min-w-0">
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-[#8A958F]">
                                                 End Date
                                             </p>
 
-                                            <p className="mt-1 text-[11px] font-semibold text-[#4A564F]">
+                                            <p className="mt-2 break-words text-sm font-semibold text-[#36413B]">
                                                 {formatDate(project.end_date)}
                                             </p>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-between border-t border-[#E8EEEA] bg-[#F8FAF9] px-4 py-2.5">
-                                    <span className="text-[11px] font-medium text-[#7A857F]">
+                                {/* Card footer */}
+                                <div className="flex items-center justify-between gap-3 border-t border-[#E8EEEA] bg-[#F8FAF9] px-5 py-4 sm:px-6">
+                                    <span className="text-xs font-medium text-[#6B7770]">
                                         View project details
                                     </span>
 
-                                    <span className="text-[#8A958F] transition group-hover:translate-x-1 group-hover:text-[#166534]">
+                                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-[#6B7770] transition group-hover:bg-[#ECFDF3] group-hover:text-[#166534]">
                                         <ArrowIcon />
                                     </span>
                                 </div>
