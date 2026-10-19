@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\TaskResource;
 use App\Models\Task;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -29,13 +30,26 @@ class TaskController extends Controller
             ->with([
                 'project',
                 'assignee',
+                'assignees',
             ])
-            ->where('assigned_to', $user->id);
+            ->where(function (Builder $query) use ($user): void {
+                $query
+                    ->where('assigned_to', $user->id)
+                    ->orWhereHas(
+                        'assignees',
+                        function (Builder $assigneeQuery) use ($user): void {
+                            $assigneeQuery->where(
+                                'users.id',
+                                $user->id
+                            );
+                        }
+                    );
+            });
 
         if ($request->filled('search')) {
             $search = trim((string) $request->input('search'));
 
-            $query->where(function ($query) use ($search) {
+            $query->where(function (Builder $query) use ($search): void {
                 $query
                     ->where('title', 'like', '%' . $search . '%')
                     ->orWhere(
@@ -74,7 +88,19 @@ class TaskController extends Controller
             ->withQueryString();
 
         $employeeTasks = Task::query()
-            ->where('assigned_to', $user->id)
+            ->where(function (Builder $query) use ($user): void {
+                $query
+                    ->where('assigned_to', $user->id)
+                    ->orWhereHas(
+                        'assignees',
+                        function (Builder $assigneeQuery) use ($user): void {
+                            $assigneeQuery->where(
+                                'users.id',
+                                $user->id
+                            );
+                        }
+                    );
+            })
             ->get([
                 'id',
                 'status',
@@ -113,7 +139,7 @@ class TaskController extends Controller
     }
 
     /**
-     * Display task details.
+     * Display a single task.
      */
     public function show(Task $task): JsonResponse
     {
@@ -122,6 +148,7 @@ class TaskController extends Controller
         $task->load([
             'project',
             'assignee',
+            'assignees',
         ]);
 
         return response()->json([
@@ -181,6 +208,7 @@ class TaskController extends Controller
         $task->load([
             'project',
             'assignee',
+            'assignees',
         ]);
 
         return response()->json([
@@ -190,7 +218,7 @@ class TaskController extends Controller
     }
 
     /**
-     * Ensure employee can only access assigned tasks.
+     * Ensure the employee is assigned directly or through the pivot table.
      */
     private function authorizeTask(Task $task): void
     {
@@ -201,9 +229,18 @@ class TaskController extends Controller
             403
         );
 
-        if ((int) $task->assigned_to !== (int) $user->id) {
-            abort(403);
-        }
+        $isAssignedDirectly =
+            (int) $task->assigned_to === (int) $user->id;
+
+        $isAssignedThroughPivot = $task
+            ->assignees()
+            ->where('users.id', $user->id)
+            ->exists();
+
+        abort_unless(
+            $isAssignedDirectly || $isAssignedThroughPivot,
+            403
+        );
     }
 
     /**

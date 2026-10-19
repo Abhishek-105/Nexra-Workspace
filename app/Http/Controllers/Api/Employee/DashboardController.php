@@ -10,6 +10,7 @@ use App\Http\Resources\UserResource;
 use App\Models\DailyUpdate;
 use App\Models\Task;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -36,12 +37,27 @@ class DashboardController extends Controller
         $projects = $user->projects()
             ->withCount([
                 'tasks as total_tasks' => function ($query) use ($user) {
-                    $query->where('assigned_to', $user->id);
+                    $query->where(function (Builder $taskQuery) use ($user) {
+                        $this->applyEmployeeTaskAssignmentFilter(
+                            $taskQuery,
+                            $user
+                        );
+                    });
                 },
                 'tasks as completed_tasks' => function ($query) use ($user) {
                     $query
-                        ->where('assigned_to', $user->id)
-                        ->where('status', 'Done');
+                        ->where(function (Builder $taskQuery) use ($user) {
+                            $this->applyEmployeeTaskAssignmentFilter(
+                                $taskQuery,
+                                $user
+                            );
+                        })
+                        ->whereIn('status', [
+                            'Done',
+                            'done',
+                            'Completed',
+                            'completed',
+                        ]);
                 },
             ])
             ->latest('projects.created_at')
@@ -56,20 +72,38 @@ class DashboardController extends Controller
         */
 
         $taskQuery = Task::query()
-            ->where('assigned_to', $user->id);
+            ->where(function (Builder $query) use ($user) {
+                $this->applyEmployeeTaskAssignmentFilter(
+                    $query,
+                    $user
+                );
+            });
 
         $totalTasks = (clone $taskQuery)->count();
 
         $completedTasks = (clone $taskQuery)
-            ->where('status', 'Done')
+            ->whereIn('status', [
+                'Done',
+                'done',
+                'Completed',
+                'completed',
+            ])
             ->count();
 
         $pendingTasks = (clone $taskQuery)
-            ->where('status', '!=', 'Done')
+            ->whereIn('status', [
+                'Pending',
+                'pending',
+            ])
             ->count();
 
         $inProgressTasks = (clone $taskQuery)
-            ->where('status', 'In Progress')
+            ->whereIn('status', [
+                'In Progress',
+                'in progress',
+                'in_progress',
+                'In-Progress',
+            ])
             ->count();
 
         /*
@@ -105,8 +139,17 @@ class DashboardController extends Controller
         */
 
         $recentTasks = Task::query()
-            ->with('project')
-            ->where('assigned_to', $user->id)
+            ->with([
+                'project',
+                'assignee',
+                'assignees',
+            ])
+            ->where(function (Builder $query) use ($user) {
+                $this->applyEmployeeTaskAssignmentFilter(
+                    $query,
+                    $user
+                );
+            })
             ->latest('tasks.updated_at')
             ->take(6)
             ->get();
@@ -118,9 +161,23 @@ class DashboardController extends Controller
         */
 
         $upcomingTasks = Task::query()
-            ->with('project')
-            ->where('assigned_to', $user->id)
-            ->where('status', '!=', 'Done')
+            ->with([
+                'project',
+                'assignee',
+                'assignees',
+            ])
+            ->where(function (Builder $query) use ($user) {
+                $this->applyEmployeeTaskAssignmentFilter(
+                    $query,
+                    $user
+                );
+            })
+            ->whereNotIn('status', [
+                'Done',
+                'done',
+                'Completed',
+                'completed',
+            ])
             ->whereNotNull('deadline')
             ->whereDate('deadline', '>=', $today)
             ->orderBy('deadline')
@@ -177,21 +234,29 @@ class DashboardController extends Controller
                 'completion_percentage' => $completionPercentage,
             ],
 
-            'projects' => ProjectResource::collection(
-                $projects
-            ),
+            'projects' => ProjectResource::collection($projects),
 
-            'recent_tasks' => TaskResource::collection(
-                $recentTasks
-            ),
+            'recent_tasks' => TaskResource::collection($recentTasks),
 
-            'upcoming_tasks' => TaskResource::collection(
-                $upcomingTasks
-            ),
+            'upcoming_tasks' => TaskResource::collection($upcomingTasks),
 
             'recent_updates' => DailyUpdateResource::collection(
                 $recentUpdates
             ),
         ]);
+    }
+
+    /**
+     * Include tasks assigned directly or through task_assignments.
+     */
+    private function applyEmployeeTaskAssignmentFilter(
+        Builder $query,
+        User $user
+    ): void {
+        $query
+            ->where('assigned_to', $user->id)
+            ->orWhereHas('assignees', function (Builder $assigneeQuery) use ($user) {
+                $assigneeQuery->where('users.id', $user->id);
+            });
     }
 }
