@@ -20,11 +20,6 @@ type Project = {
     end_date?: string | null;
     created_at?: string | null;
     updated_at?: string | null;
-    total_tasks?: number;
-    completed_tasks?: number;
-    tasks_count?: number;
-    completed_tasks_count?: number;
-    task_count?: number;
 };
 
 type ApiResponse = {
@@ -134,23 +129,6 @@ const formatDate = (value?: string | null) => {
         month: "short",
         year: "numeric",
     });
-};
-
-const getTaskCount = (project: Project) => {
-    return (
-        project.total_tasks ??
-        project.tasks_count ??
-        project.task_count ??
-        0
-    );
-};
-
-const getCompletedTaskCount = (project: Project) => {
-    return (
-        project.completed_tasks ??
-        project.completed_tasks_count ??
-        0
-    );
 };
 
 const FolderIcon = () => (
@@ -384,7 +362,6 @@ export default function EmployeeProjectsPage() {
     return (
         <main className="min-h-screen bg-[#F5F7F6] p-4 pt-2 sm:p-5 sm:pt-3 lg:p-6 lg:pt-3">
             <div className="mx-auto max-w-7xl space-y-5">
-                {/* Header */}
                 <section className="relative overflow-hidden rounded-2xl bg-[#171A19] px-5 py-4 shadow-sm sm:px-6 sm:py-4">
                     <div className="absolute -right-20 -top-24 h-56 w-56 rounded-full bg-[#166534]/20 blur-3xl" />
                     <div className="absolute -bottom-28 left-1/3 h-56 w-56 rounded-full bg-[#22C55E]/10 blur-3xl" />
@@ -410,8 +387,7 @@ export default function EmployeeProjectsPage() {
                                     </h1>
 
                                     <p className="mt-0.5 text-[11px] text-[#9AA69F] sm:text-xs">
-                                        View your assigned projects and task
-                                        counts.
+                                        View your assigned projects.
                                     </p>
                                 </div>
                             </div>
@@ -427,7 +403,6 @@ export default function EmployeeProjectsPage() {
                     </div>
                 </section>
 
-                {/* Statistics */}
                 <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     <div className="rounded-2xl border border-[#E1E7E3] bg-white p-4 shadow-sm">
                         <div className="flex items-center justify-between">
@@ -498,7 +473,6 @@ export default function EmployeeProjectsPage() {
                     </div>
                 </section>
 
-                {/* Search and filters */}
                 <section className="rounded-2xl border border-[#E1E7E3] bg-white p-4 shadow-sm">
                     <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
                         <div className="relative flex-1">
@@ -565,7 +539,6 @@ export default function EmployeeProjectsPage() {
                     </div>
                 </section>
 
-                {/* Project cards */}
                 {filteredProjects.length === 0 ? (
                     <section className="rounded-2xl border border-[#E1E7E3] bg-white px-6 py-14 text-center shadow-sm">
                         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-[#ECFDF3] text-[#166534]">
@@ -599,95 +572,76 @@ export default function EmployeeProjectsPage() {
                     </section>
                 ) : (
                     <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                        {filteredProjects.map((project) => {
-                            const taskCount = getTaskCount(project);
-                            const completedTaskCount =
-                                getCompletedTaskCount(project);
+                        {filteredProjects.map((project) => (
+                            <Link
+                                key={project.id}
+                                href={`/employee/projects/${project.id}`}
+                                className="group flex min-h-[250px] flex-col overflow-hidden rounded-2xl border border-[#E1E7E3] bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[#C8D4CD] hover:shadow-md"
+                            >
+                                <div className="h-1 bg-[#166534]" />
 
-                            return (
-                                <Link
-                                    key={project.id}
-                                    href={`/employee/projects/${project.id}`}
-                                    className="group flex min-h-[250px] flex-col overflow-hidden rounded-2xl border border-[#E1E7E3] bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[#C8D4CD] hover:shadow-md"
-                                >
-                                    <div className="h-1 bg-[#166534]" />
-
-                                    <div className="flex flex-1 flex-col p-4">
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#ECFDF3] text-sm font-bold text-[#166534] transition group-hover:bg-[#166534] group-hover:text-white">
-                                                {getProjectName(project)
-                                                    .charAt(0)
-                                                    .toUpperCase()}
-                                            </div>
-
-                                            <span
-                                                className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${getStatusClasses(
-                                                    project.status
-                                                )}`}
-                                            >
-                                                {normalizeStatus(project.status)}
-                                            </span>
+                                <div className="flex flex-1 flex-col p-4">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#ECFDF3] text-sm font-bold text-[#166534] transition group-hover:bg-[#166534] group-hover:text-white">
+                                            {getProjectName(project)
+                                                .charAt(0)
+                                                .toUpperCase()}
                                         </div>
 
-                                        <div className="mt-4">
-                                            <h2 className="line-clamp-1 text-base font-bold tracking-tight text-[#18201C] transition group-hover:text-[#166534]">
-                                                {getProjectName(project)}
-                                            </h2>
+                                        <span
+                                            className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${getStatusClasses(
+                                                project.status
+                                            )}`}
+                                        >
+                                            {normalizeStatus(project.status)}
+                                        </span>
+                                    </div>
 
-                                            <p className="mt-1.5 line-clamp-2 min-h-[40px] text-xs leading-5 text-[#6B7770]">
-                                                {project.description ||
-                                                    "No project description available."}
+                                    <div className="mt-4">
+                                        <h2 className="line-clamp-1 text-base font-bold tracking-tight text-[#18201C] transition group-hover:text-[#166534]">
+                                            {getProjectName(project)}
+                                        </h2>
+
+                                        <p className="mt-1.5 line-clamp-2 min-h-[40px] text-xs leading-5 text-[#6B7770]">
+                                            {project.description ||
+                                                "No project description available."}
+                                        </p>
+                                    </div>
+
+                                    <div className="mt-auto grid grid-cols-2 gap-3 border-t border-[#E8EEEA] pt-4">
+                                        <div>
+                                            <p className="text-[9px] font-bold uppercase tracking-wider text-[#8A958F]">
+                                                Start Date
+                                            </p>
+
+                                            <p className="mt-1 text-[11px] font-semibold text-[#4A564F]">
+                                                {formatDate(project.start_date)}
                                             </p>
                                         </div>
 
-                                        {/* Task counts only — progress bar removed */}
-                                        <div className="mt-auto pt-4">
-                                            <div className="flex items-center justify-between rounded-xl bg-[#F5F7F6] px-3 py-2.5">
-                                                <span className="text-[11px] font-semibold text-[#6B7770]">
-                                                    Tasks completed
-                                                </span>
+                                        <div>
+                                            <p className="text-[9px] font-bold uppercase tracking-wider text-[#8A958F]">
+                                                End Date
+                                            </p>
 
-                                                <span className="text-sm font-bold text-[#18201C]">
-                                                    {completedTaskCount} / {taskCount}
-                                                </span>
-                                            </div>
-
-                                            <div className="mt-3 grid grid-cols-2 gap-3 border-t border-[#E8EEEA] pt-3">
-                                                <div>
-                                                    <p className="text-[9px] font-bold uppercase tracking-wider text-[#8A958F]">
-                                                        Start Date
-                                                    </p>
-
-                                                    <p className="mt-1 text-[11px] font-semibold text-[#4A564F]">
-                                                        {formatDate(project.start_date)}
-                                                    </p>
-                                                </div>
-
-                                                <div>
-                                                    <p className="text-[9px] font-bold uppercase tracking-wider text-[#8A958F]">
-                                                        End Date
-                                                    </p>
-
-                                                    <p className="mt-1 text-[11px] font-semibold text-[#4A564F]">
-                                                        {formatDate(project.end_date)}
-                                                    </p>
-                                                </div>
-                                            </div>
+                                            <p className="mt-1 text-[11px] font-semibold text-[#4A564F]">
+                                                {formatDate(project.end_date)}
+                                            </p>
                                         </div>
                                     </div>
+                                </div>
 
-                                    <div className="flex items-center justify-between border-t border-[#E8EEEA] bg-[#F8FAF9] px-4 py-2.5">
-                                        <span className="text-[11px] font-medium text-[#7A857F]">
-                                            View project details
-                                        </span>
+                                <div className="flex items-center justify-between border-t border-[#E8EEEA] bg-[#F8FAF9] px-4 py-2.5">
+                                    <span className="text-[11px] font-medium text-[#7A857F]">
+                                        View project details
+                                    </span>
 
-                                        <span className="text-[#8A958F] transition group-hover:translate-x-1 group-hover:text-[#166534]">
-                                            <ArrowIcon />
-                                        </span>
-                                    </div>
-                                </Link>
-                            );
-                        })}
+                                    <span className="text-[#8A958F] transition group-hover:translate-x-1 group-hover:text-[#166534]">
+                                        <ArrowIcon />
+                                    </span>
+                                </div>
+                            </Link>
+                        ))}
                     </section>
                 )}
             </div>

@@ -20,10 +20,6 @@ type Project = {
     name?: string;
     description?: string;
     status?: string;
-    total_tasks?: number;
-    completed_tasks?: number;
-    tasks_count?: number;
-    task_count?: number;
 };
 
 type Task = {
@@ -56,14 +52,12 @@ type DailyUpdate = {
 type Statistics = {
     project_count?: number;
     total_tasks?: number;
-    completed_tasks?: number;
     pending_tasks?: number;
     in_progress_tasks?: number;
     has_submitted_today?: boolean;
     today_updates?: number;
     logged_hours?: number | string;
     today_hours?: number | string;
-    completion_percentage?: number;
 };
 
 type ApiResponse = {
@@ -286,15 +280,8 @@ export default function EmployeeDashboardPage() {
 
     const projectCount = statistics.project_count ?? projects.length;
     const totalTasks = statistics.total_tasks ?? 0;
-    const completedTasks = statistics.completed_tasks ?? 0;
     const pendingTasks = statistics.pending_tasks ?? 0;
     const inProgressTasks = statistics.in_progress_tasks ?? 0;
-
-    const completionPercentage =
-        statistics.completion_percentage ??
-        (totalTasks > 0
-            ? Math.round((completedTasks / totalTasks) * 100)
-            : 0);
 
     const hasSubmittedToday =
         statistics.has_submitted_today ??
@@ -309,8 +296,8 @@ export default function EmployeeDashboardPage() {
             <div className="space-y-5">
                 <div className="h-32 animate-pulse rounded-2xl bg-[#171A19]" />
 
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    {[1, 2, 3, 4].map((item) => (
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    {[1, 2, 3].map((item) => (
                         <div
                             key={item}
                             className="h-24 animate-pulse rounded-2xl border border-[#E1E7E3] bg-white"
@@ -376,7 +363,7 @@ export default function EmployeeDashboardPage() {
                 </div>
             </section>
 
-            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 <div className="rounded-2xl border border-[#E1E7E3] bg-white p-4 shadow-sm">
                     <div className="flex items-center justify-between">
                         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#ECFDF3] text-[#166534]">
@@ -405,23 +392,6 @@ export default function EmployeeDashboardPage() {
                         {totalTasks}
                     </p>
                     <p className="mt-0.5 text-xs text-[#6B7770]">Assigned Tasks</p>
-                </div>
-
-                <div className="rounded-2xl border border-[#E1E7E3] bg-white p-4 shadow-sm">
-                    <div className="flex items-center justify-between">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#ECFDF3] text-[#166534]">
-                            <TaskIcon />
-                        </div>
-                        <span className="text-xs font-medium text-[#6B7770]">
-                            {completionPercentage}%
-                        </span>
-                    </div>
-                    <p className="mt-3 text-2xl font-bold tracking-tight text-[#18201C]">
-                        {completedTasks}
-                    </p>
-                    <p className="mt-0.5 text-xs text-[#6B7770]">
-                        Completed Tasks
-                    </p>
                 </div>
 
                 <div className="rounded-2xl border border-[#E1E7E3] bg-white p-4 shadow-sm">
@@ -476,51 +446,33 @@ export default function EmployeeDashboardPage() {
                         </div>
                     ) : (
                         <div className="grid gap-3 p-4 md:grid-cols-2">
-                            {projects.map((project) => {
-                                const completed = project.completed_tasks ?? 0;
-                                const total =
-                                    project.total_tasks ??
-                                    project.tasks_count ??
-                                    project.task_count ??
-                                    0;
-
-                                return (
-                                    <Link
-                                        key={project.id}
-                                        href={`/employee/projects/${project.id}`}
-                                        className="group overflow-hidden rounded-xl border border-[#E1E7E3] bg-white transition hover:-translate-y-0.5 hover:border-[#B8C9BE] hover:shadow-md"
-                                    >
-                                        <div className="h-1 bg-[#166534]" />
-                                        <div className="p-4">
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div className="min-w-0">
-                                                    <h3 className="truncate text-sm font-semibold text-[#18201C] group-hover:text-[#166534]">
-                                                        {getProjectName(project)}
-                                                    </h3>
-                                                    <p className="mt-1 line-clamp-2 text-xs text-[#6B7770]">
-                                                        {project.description ||
-                                                            "No project description"}
-                                                    </p>
-                                                </div>
-                                                <span
-                                                    className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold capitalize ${getStatusClasses(project.status)}`}
-                                                >
-                                                    {normalizeStatus(project.status)}
-                                                </span>
+                            {projects.map((project) => (
+                                <Link
+                                    key={project.id}
+                                    href={`/employee/projects/${project.id}`}
+                                    className="group overflow-hidden rounded-xl border border-[#E1E7E3] bg-white transition hover:-translate-y-0.5 hover:border-[#B8C9BE] hover:shadow-md"
+                                >
+                                    <div className="h-1 bg-[#166534]" />
+                                    <div className="p-4">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <h3 className="truncate text-sm font-semibold text-[#18201C] group-hover:text-[#166534]">
+                                                    {getProjectName(project)}
+                                                </h3>
+                                                <p className="mt-1 line-clamp-2 text-xs text-[#6B7770]">
+                                                    {project.description ||
+                                                        "No project description"}
+                                                </p>
                                             </div>
-
-                                            <div className="mt-4 flex items-center justify-between border-t border-[#E8ECEA] pt-3 text-[11px] text-[#6B7770]">
-                                                <span>
-                                                    {completed} of {total} tasks completed
-                                                </span>
-                                                <span className="font-medium text-[#166534]">
-                                                    Open →
-                                                </span>
-                                            </div>
+                                            <span
+                                                className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold capitalize ${getStatusClasses(project.status)}`}
+                                            >
+                                                {normalizeStatus(project.status)}
+                                            </span>
                                         </div>
-                                    </Link>
-                                );
-                            })}
+                                    </div>
+                                </Link>
+                            ))}
                         </div>
                     )}
                 </div>
@@ -582,7 +534,6 @@ export default function EmployeeDashboardPage() {
 
                         <div className="mt-5 space-y-3">
                             {[
-                                ["Tasks completed", completedTasks],
                                 ["In progress", inProgressTasks],
                                 ["Pending", pendingTasks],
                             ].map(([label, value]) => (
@@ -598,15 +549,6 @@ export default function EmployeeDashboardPage() {
                                     </span>
                                 </div>
                             ))}
-
-                            <div className="flex items-center justify-between border-t border-[#E8ECEA] pt-3">
-                                <span className="text-xs text-[#6B7770]">
-                                    Overall completion
-                                </span>
-                                <span className="text-sm font-bold text-[#166534]">
-                                    {completionPercentage}%
-                                </span>
-                            </div>
                         </div>
 
                         <Link
