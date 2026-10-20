@@ -1,4 +1,5 @@
-# 🚀 Nexra Workspace
+# 🚀 WorkSphere 
+Also shown as "Nexra Workspace" in the app UI.
 
 > Employee daily work and project management platform designed to manage teams, projects, tasks, assignments, and daily work updates through role-based Manager and Employee workflows.
 
