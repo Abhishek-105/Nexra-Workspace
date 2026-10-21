@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
+// Login must remain outside the auth:sanctum middleware group.
 Route::post('/login', [AuthController::class, 'login']);
 
 /*
@@ -28,285 +29,175 @@ Route::post('/login', [AuthController::class, 'login']);
 
 Route::middleware('auth:sanctum')->group(function () {
 
-    /*
-    |--------------------------------------------------------------------------
-    | Authentication
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get('/user', [AuthController::class, 'user']);
-
+    // Authentication and profile
     Route::post('/logout', [AuthController::class, 'logout']);
-
-    Route::post('/profile', [
-        AuthController::class,
-        'updateProfile',
-    ]);
+    Route::get('/user', [AuthController::class, 'user']);
+    Route::put('/profile', [AuthController::class, 'updateProfile']);
+    Route::post('/profile', [AuthController::class, 'updateProfile']);
 
     /*
     |--------------------------------------------------------------------------
-    | Manager
+    | Employee Routes
     |--------------------------------------------------------------------------
     */
 
-    Route::prefix('manager')->group(function () {
+    Route::prefix('employee')
+        ->name('employee.')
+        ->group(function () {
 
-        /*
-        |--------------------------------------------------------------------------
-        | Dashboard
-        |--------------------------------------------------------------------------
-        */
+            Route::get('/dashboard', [
+                EmployeeDashboardController::class,
+                'index',
+            ])->name('dashboard');
 
-        Route::get('/dashboard', [
-            ManagerDashboardController::class,
-            'index',
-        ]);
+            Route::get('/projects', [
+                EmployeeProjectController::class,
+                'index',
+            ])->name('projects.index');
 
-        /*
-        |--------------------------------------------------------------------------
-        | Projects
-        |--------------------------------------------------------------------------
-        */
+            Route::get('/projects/{project}', [
+                EmployeeProjectController::class,
+                'show',
+            ])->name('projects.show');
 
-        Route::get('/projects', [
-            ManagerProjectController::class,
-            'index',
-        ]);
+            Route::get('/tasks', [
+                EmployeeTaskController::class,
+                'index',
+            ])->name('tasks.index');
 
-        Route::get('/projects/employees', [
-            ManagerProjectController::class,
-            'employees',
-        ]);
+            Route::get('/tasks/{task}', [
+                EmployeeTaskController::class,
+                'show',
+            ])->name('tasks.show');
 
-        Route::post('/projects', [
-            ManagerProjectController::class,
-            'store',
-        ]);
+            Route::get('/daily-updates', [
+                EmployeeDailyUpdateController::class,
+                'index',
+            ])->name('daily-updates.index');
 
-        Route::get('/projects/{project}', [
-            ManagerProjectController::class,
-            'show',
-        ]);
+            Route::get('/daily-updates/create', [
+                EmployeeDailyUpdateController::class,
+                'create',
+            ])->name('daily-updates.create');
 
-        Route::put('/projects/{project}', [
-            ManagerProjectController::class,
-            'update',
-        ]);
+            Route::post('/daily-updates', [
+                EmployeeDailyUpdateController::class,
+                'store',
+            ])->name('daily-updates.store');
 
-        Route::delete('/projects/{project}', [
-            ManagerProjectController::class,
-            'destroy',
-        ]);
-
-        Route::post('/projects/{project}/assign-employees', [
-            ManagerProjectController::class,
-            'assignEmployees',
-        ]);
-
-        Route::post('/projects/{project}/files', [
-            ManagerProjectController::class,
-            'uploadFile',
-        ]);
-
-        Route::get('/projects/{project}/files/{file}/download', [
-            ManagerProjectController::class,
-            'downloadFile',
-        ]);
-
-        Route::delete('/projects/{project}/files/{file}', [
-            ManagerProjectController::class,
-            'deleteFile',
-        ]);
-
-        /*
-        |--------------------------------------------------------------------------
-        | Tasks
-        |--------------------------------------------------------------------------
-        */
-
-        Route::get('/tasks', [
-            ManagerTaskController::class,
-            'index',
-        ]);
-
-        Route::post('/tasks', [
-            ManagerTaskController::class,
-            'store',
-        ]);
-
-        Route::get('/tasks/{task}', [
-            ManagerTaskController::class,
-            'show',
-        ]);
-
-        Route::put('/tasks/{task}', [
-            ManagerTaskController::class,
-            'update',
-        ]);
-
-        Route::patch('/tasks/{task}/status', [
-            ManagerTaskController::class,
-            'updateStatus',
-        ]);
-
-        Route::delete('/tasks/{task}', [
-            ManagerTaskController::class,
-            'destroy',
-        ]);
-
-        /*
-        |--------------------------------------------------------------------------
-        | Team
-        |--------------------------------------------------------------------------
-        */
-
-        Route::get('/team', [
-            ManagerTeamController::class,
-            'index',
-        ]);
-
-        Route::post('/team', [
-            ManagerTeamController::class,
-            'store',
-        ]);
-
-        Route::get('/team/{team}', [
-            ManagerTeamController::class,
-            'show',
-        ]);
-
-        Route::put('/team/{team}', [
-            ManagerTeamController::class,
-            'update',
-        ]);
-
-        Route::patch('/team/{team}/status', [
-            ManagerTeamController::class,
-            'updateStatus',
-        ]);
-
-        Route::delete('/team/{team}', [
-            ManagerTeamController::class,
-            'destroy',
-        ]);
-
-        /*
-        |--------------------------------------------------------------------------
-        | Daily Updates
-        |--------------------------------------------------------------------------
-        */
-
-        Route::get('/daily-updates', [
-            ManagerDailyUpdateController::class,
-            'index',
-        ]);
-
-        Route::get('/daily-updates/{dailyUpdate}', [
-            ManagerDailyUpdateController::class,
-            'show',
-        ]);
-
-        Route::patch('/daily-updates/{dailyUpdate}/review', [
-            ManagerDailyUpdateController::class,
-            'review',
-        ]);
-
-        Route::patch('/daily-updates/{dailyUpdate}/acknowledge-blocker', [
-            ManagerDailyUpdateController::class,
-            'acknowledgeBlocker',
-        ]);
-
-        Route::post('/daily-updates/{dailyUpdate}/comment', [
-            ManagerDailyUpdateController::class,
-            'comment',
-        ]);
-    });
+            Route::get('/daily-updates/{dailyUpdate}', [
+                EmployeeDailyUpdateController::class,
+                'show',
+            ])->name('daily-updates.show');
+        });
 
     /*
     |--------------------------------------------------------------------------
-    | Employee
+    | Manager Routes
     |--------------------------------------------------------------------------
     */
 
-    Route::prefix('employee')->group(function () {
+    Route::prefix('manager')
+        ->name('manager.')
+        ->group(function () {
 
-        /*
-        |--------------------------------------------------------------------------
-        | Dashboard
-        |--------------------------------------------------------------------------
-        */
+            Route::get('/dashboard', [
+                ManagerDashboardController::class,
+                'index',
+            ])->name('dashboard');
 
-        Route::get('/dashboard', [
-            EmployeeDashboardController::class,
-            'index',
-        ]);
+            // Projects
+            Route::get('/projects', [
+                ManagerProjectController::class,
+                'index',
+            ])->name('projects.index');
 
-        /*
-        |--------------------------------------------------------------------------
-        | Projects
-        |--------------------------------------------------------------------------
-        */
+            Route::post('/projects', [
+                ManagerProjectController::class,
+                'store',
+            ])->name('projects.store');
 
-        Route::get('/projects', [
-            EmployeeProjectController::class,
-            'index',
-        ]);
+            Route::get('/projects/{project}', [
+                ManagerProjectController::class,
+                'show',
+            ])->name('projects.show');
 
-        Route::get('/projects/{project}', [
-            EmployeeProjectController::class,
-            'show',
-        ]);
+            Route::put('/projects/{project}', [
+                ManagerProjectController::class,
+                'update',
+            ])->name('projects.update');
 
-        Route::get('/projects/{project}/files/{file}/download', [
-            EmployeeProjectController::class,
-            'downloadFile',
-        ]);
+            Route::patch('/projects/{project}', [
+                ManagerProjectController::class,
+                'update',
+            ]);
 
-        /*
-        |--------------------------------------------------------------------------
-        | Tasks
-        |--------------------------------------------------------------------------
-        */
+            Route::delete('/projects/{project}', [
+                ManagerProjectController::class,
+                'destroy',
+            ])->name('projects.destroy');
 
-        Route::get('/tasks', [
-            EmployeeTaskController::class,
-            'index',
-        ]);
+            // Tasks
+            Route::get('/tasks', [
+                ManagerTaskController::class,
+                'index',
+            ])->name('tasks.index');
 
-        Route::get('/tasks/{task}', [
-            EmployeeTaskController::class,
-            'show',
-        ]);
+            Route::post('/tasks', [
+                ManagerTaskController::class,
+                'store',
+            ])->name('tasks.store');
 
-        Route::patch('/tasks/{task}/status', [
-            EmployeeTaskController::class,
-            'updateStatus',
-        ]);
+            Route::get('/tasks/{task}', [
+                ManagerTaskController::class,
+                'show',
+            ])->name('tasks.show');
 
-        /*
-        |--------------------------------------------------------------------------
-        | Daily Updates
-        |--------------------------------------------------------------------------
-        */
+            Route::put('/tasks/{task}', [
+                ManagerTaskController::class,
+                'update',
+            ])->name('tasks.update');
 
-        Route::get('/daily-updates', [
-            EmployeeDailyUpdateController::class,
-            'index',
-        ]);
+            Route::patch('/tasks/{task}', [
+                ManagerTaskController::class,
+                'update',
+            ]);
 
-        Route::get('/daily-updates/create', [
-            EmployeeDailyUpdateController::class,
-            'create',
-        ]);
+            Route::delete('/tasks/{task}', [
+                ManagerTaskController::class,
+                'destroy',
+            ])->name('tasks.destroy');
 
-        Route::post('/daily-updates', [
-            EmployeeDailyUpdateController::class,
-            'store',
-        ]);
+            // Team
+            Route::get('/team', [
+                ManagerTeamController::class,
+                'index',
+            ])->name('team.index');
 
-        Route::get('/daily-updates/{dailyUpdate}', [
-            EmployeeDailyUpdateController::class,
-            'show',
-        ]);
-    });
+            // Daily updates
+            Route::get('/daily-updates', [
+                ManagerDailyUpdateController::class,
+                'index',
+            ])->name('daily-updates.index');
+
+            Route::get('/daily-updates/{dailyUpdate}', [
+                ManagerDailyUpdateController::class,
+                'show',
+            ])->name('daily-updates.show');
+
+            Route::patch('/daily-updates/{dailyUpdate}/review', [
+                ManagerDailyUpdateController::class,
+                'review',
+            ])->name('daily-updates.review');
+
+            Route::patch('/daily-updates/{dailyUpdate}/acknowledge-blocker', [
+                ManagerDailyUpdateController::class,
+                'acknowledgeBlocker',
+            ])->name('daily-updates.acknowledge-blocker');
+
+            Route::post('/daily-updates/{dailyUpdate}/comment', [
+                ManagerDailyUpdateController::class,
+                'comment',
+            ])->name('daily-updates.comment');
+        });
 });

@@ -11,138 +11,74 @@ use App\Models\Task;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class DailyUpdateController extends Controller
 {
     /**
-     * Employee daily update history.
-     */
-    public function index(Request $request): JsonResponse
-    {
-        /** @var User|null $user */
-        $user = $request->user();
-
-        abort_unless(
-            $user instanceof User && $user->isEmployee(),
-            403
-        );
-
-        $employeeId = $user->id;
-        $today = now()->toDateString();
-
-        $updates = DailyUpdate::query()
-            ->where('employee_id', $employeeId)
-            ->with([
-                'project',
-                'task',
-                'reviewer',
-                'blockerAcknowledgedBy',
-            ])
-            ->latest('update_date')
-            ->latest('created_at')
-            ->paginate(15)
-            ->withQueryString();
-
-        $todayUpdate = DailyUpdate::query()
-            ->where('employee_id', $employeeId)
-            ->whereDate('update_date', $today)
-            ->with([
-                'project',
-                'task',
-                'reviewer',
-                'blockerAcknowledgedBy',
-            ])
-            ->latest('created_at')
-            ->first();
-
-        $totalUpdates = DailyUpdate::query()
-            ->where('employee_id', $employeeId)
-            ->count();
-
-        $pendingReviews = DailyUpdate::query()
-            ->where('employee_id', $employeeId)
-            ->where('status', 'pending')
-            ->count();
-
-        $reviewedUpdates = DailyUpdate::query()
-            ->where('employee_id', $employeeId)
-            ->where('status', 'reviewed')
-            ->count();
-
-        $activeBlockers = DailyUpdate::query()
-            ->where('employee_id', $employeeId)
-            ->whereNotNull('blocker_details')
-            ->whereNull('blocker_acknowledged_at')
-            ->count();
-
-        return response()->json([
-            'message' => 'Employee daily updates retrieved successfully.',
-
-            'statistics' => [
-                'total_updates' => $totalUpdates,
-                'pending_reviews' => $pendingReviews,
-                'reviewed_updates' => $reviewedUpdates,
-                'active_blockers' => $activeBlockers,
-            ],
-
-            'today_update' => $todayUpdate
-                ? new DailyUpdateResource($todayUpdate)
-                : null,
-
-            'updates' => DailyUpdateResource::collection($updates),
-        ]);
-    }
-
-    /**
-     * Get projects and assigned active tasks available for daily update submission.
+     * Return projects and tasks available to the authenticated employee.
      */
     public function create(Request $request): JsonResponse
     {
-        /** @var User|null $user */
-        $user = $request->user();
+        $employee = $request->user();
+
+        if (!$employee instanceof User) {
+            return response()->json([
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
 
         abort_unless(
-            $user instanceof User && $user->isEmployee(),
-            403
+            $employee->role === 'employee',
+            403,
+            'Only employees can access this resource.'
         );
 
-        $employeeId = $user->id;
-
         $projects = Project::query()
-            ->where('status', '!=', 'completed')
-            ->whereHas('employees', function ($query) use ($employeeId) {
-                $query->where('users.id', $employeeId);
+            ->whereHas('employees', function ($query) use ($employee) {
+                $query->where('users.id', $employee->id);
             })
-            ->with([
-                'tasks' => function ($query) use ($employeeId) {
-                    $query
-                        ->where('status', '!=', 'completed')
-                        ->whereHas('assignees', function ($assigneeQuery) use ($employeeId) {
-                            $assigneeQuery->where('users.id', $employeeId);
-                        })
-                        ->orderBy('title');
-                },
-            ])
+            ->orderBy('title')
+            ->get();
+
+        $projectIds = $projects->pluck('id');
+
+        $tasks = Task::query()
+            ->whereIn('project_id', $projectIds)
+            ->where(function ($query) use ($employee) {
+                $query->where('assigned_to', $employee->id)
+                    ->orWhereHas('assignees', function ($assigneeQuery) use ($employee) {
+                        $assigneeQuery->where('users.id', $employee->id);
+                    });
+            })
+            ->with('project')
             ->orderBy('title')
             ->get();
 
         return response()->json([
-            'message' => 'Daily update submission data retrieved successfully.',
+            'message' => 'Daily update form data retrieved successfully.',
             'projects' => ProjectResource::collection($projects),
+            'tasks' => $tasks,
         ]);
     }
 
     /**
-     * Store today's daily update.
+     * Store a daily update for the authenticated employee.
      */
     public function store(Request $request): JsonResponse
     {
-        /** @var User|null $user */
-        $user = $request->user();
+        $employee = $request->user();
+
+        if (!$employee instanceof User) {
+            return response()->json([
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
 
         abort_unless(
-            $user instanceof User && $user->isEmployee(),
-            403
+            $employee->role === 'employee',
+            403,
+            'Only employees can submit daily updates.'
         );
 
         $validated = $request->validate([
@@ -163,7 +99,7 @@ class DailyUpdateController extends Controller
             'work_description' => [
                 'required',
                 'string',
-                'max:5000',
+                'max:10000',
             ],
             'hours_spent' => [
                 'required',
@@ -185,89 +121,81 @@ class DailyUpdateController extends Controller
                 'nullable',
                 'file',
                 'max:10240',
-                'mimes:pdf,doc,docx,xlsx,png,jpg,jpeg,zip,txt',
+                'mimes:pdf,doc,docx,xls,xlsx,csv,txt,jpg,jpeg,png,webp',
             ],
         ]);
 
-        $employeeId = $user->id;
-
         $project = Project::query()
-            ->whereKey((int) $validated['project_id'])
-            ->where('status', '!=', 'completed')
-            ->whereHas('employees', function ($query) use ($employeeId) {
-                $query->where('users.id', $employeeId);
+            ->whereKey($validated['project_id'])
+            ->whereHas('employees', function ($query) use ($employee) {
+                $query->where('users.id', $employee->id);
             })
             ->first();
 
         if (!$project) {
             return response()->json([
-                'message' => 'You are not assigned to this project.',
-            ], 403);
+                'message' => 'You are not assigned to the selected project.',
+                'errors' => [
+                    'project_id' => [
+                        'You are not assigned to the selected project.',
+                    ],
+                ],
+            ], 422);
         }
-
-        $task = null;
 
         if (!empty($validated['task_id'])) {
             $task = Task::query()
-                ->whereKey((int) $validated['task_id'])
+                ->whereKey($validated['task_id'])
                 ->where('project_id', $project->id)
-                ->whereHas('assignees', function ($query) use ($employeeId) {
-                    $query->where('users.id', $employeeId);
+                ->where(function ($query) use ($employee) {
+                    $query->where('assigned_to', $employee->id)
+                        ->orWhereHas('assignees', function ($assigneeQuery) use ($employee) {
+                            $assigneeQuery->where('users.id', $employee->id);
+                        });
                 })
                 ->first();
 
             if (!$task) {
                 return response()->json([
-                    'message' => 'The selected task is not assigned to you or does not belong to this project.',
+                    'message' => 'The selected task is not assigned to you or does not belong to the selected project.',
+                    'errors' => [
+                        'task_id' => [
+                            'Please select a task assigned to you in the selected project.',
+                        ],
+                    ],
                 ], 422);
             }
-        }
-
-        $duplicateExists = DailyUpdate::query()
-            ->where('employee_id', $employeeId)
-            ->where('project_id', $project->id)
-            ->whereDate(
-                'update_date',
-                $validated['update_date']
-            )
-            ->exists();
-
-        if ($duplicateExists) {
-            return response()->json([
-                'message' => 'You have already submitted a daily update for this project on this date.',
-            ], 422);
         }
 
         $filePath = null;
 
         if ($request->hasFile('attached_file')) {
-            $filePath = $request
-                ->file('attached_file')
-                ->store(
-                    'daily-updates/' . $employeeId,
-                    'public'
-                );
+            $filePath = $request->file('attached_file')
+                ->store('daily-updates', 'public');
         }
 
-        $dailyUpdate = DailyUpdate::create([
-            'employee_id' => $employeeId,
-            'project_id' => $project->id,
-            'task_id' => $task?->id,
-            'update_date' => $validated['update_date'],
-            'work_description' => $validated['work_description'],
-            'hours_spent' => $validated['hours_spent'],
-            'status' => 'pending',
-            'attached_file' => $filePath,
-            'blocker_details' => $validated['blocker_details'] ?? null,
-            'plans_for_tomorrow' => $validated['plans_for_tomorrow'] ?? null,
-            'reviewed_by' => null,
-            'reviewed_at' => null,
-            'blocker_acknowledged_by' => null,
-            'blocker_acknowledged_at' => null,
-            'manager_comment' => null,
-        ]);
+        $dailyUpdate = new DailyUpdate();
+
+        $dailyUpdate->employee_id = $employee->id;
+        $dailyUpdate->project_id = $project->id;
+        $dailyUpdate->task_id = $validated['task_id'] ?? null;
+
+        // The model casts update_date to a date, so assign the validated string.
+        $dailyUpdate->update_date = $validated['update_date'];
+
+        $dailyUpdate->work_description = $validated['work_description'];
+        $dailyUpdate->hours_spent = $validated['hours_spent'];
+        $dailyUpdate->blocker_details = $validated['blocker_details'] ?? null;
+        $dailyUpdate->plans_for_tomorrow = $validated['plans_for_tomorrow'] ?? null;
+        $dailyUpdate->attached_file = $filePath;
+
+        // Employees cannot set their own review status.
+        $dailyUpdate->status = 'pending';
+
+        $dailyUpdate->save();
 
         $dailyUpdate->load([
+            'employee',
             'project',
             'task',
             'reviewer',
@@ -275,40 +203,199 @@ class DailyUpdateController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Daily update submitted successfully and is pending manager review.',
-            'daily_update' => new DailyUpdateResource($dailyUpdate),
+            'message' => 'Daily update submitted successfully.',
+            'data' => new DailyUpdateResource($dailyUpdate),
         ], 201);
     }
 
     /**
-     * Display a single employee daily update.
+     * Return the authenticated employee's daily updates.
      */
-    public function show(
-        Request $request,
-        DailyUpdate $dailyUpdate
-    ): JsonResponse {
-        /** @var User|null $user */
-        $user = $request->user();
+    public function index(Request $request): JsonResponse
+    {
+        $employee = $request->user();
 
-        abort_unless(
-            $user instanceof User && $user->isEmployee(),
-            403
-        );
-
-        if ((int) $dailyUpdate->employee_id !== (int) $user->id) {
-            abort(403);
+        if (!$employee instanceof User) {
+            return response()->json([
+                'message' => 'Unauthenticated.',
+            ], 401);
         }
 
-        $dailyUpdate->load([
-            'project',
-            'task',
-            'reviewer',
-            'blockerAcknowledgedBy',
+        abort_unless(
+            $employee->role === 'employee',
+            403,
+            'Only employees can access their daily updates.'
+        );
+
+        $validated = $request->validate([
+            'date_range' => [
+                'sometimes',
+                'string',
+                'in:today,yesterday,last_7_days,last_30_days,this_month,all_time',
+            ],
+            'status' => [
+                'sometimes',
+                'string',
+                'in:pending,reviewed',
+            ],
+            'page' => [
+                'sometimes',
+                'integer',
+                'min:1',
+            ],
+            'per_page' => [
+                'sometimes',
+                'integer',
+                'min:1',
+                'max:100',
+            ],
         ]);
+
+        $dateRange = $validated['date_range'] ?? 'all_time';
+        $today = Carbon::today();
+
+        $query = DailyUpdate::query()
+            ->where('employee_id', $employee->id)
+            ->with([
+                'employee',
+                'project',
+                'task',
+                'reviewer',
+                'blockerAcknowledgedBy',
+            ]);
+
+        switch ($dateRange) {
+            case 'today':
+                $query->whereDate('update_date', $today->toDateString());
+                break;
+
+            case 'yesterday':
+                $query->whereDate(
+                    'update_date',
+                    $today->copy()->subDay()->toDateString()
+                );
+                break;
+
+            case 'last_7_days':
+                $query->whereBetween('update_date', [
+                    $today->copy()->subDays(6)->toDateString(),
+                    $today->toDateString(),
+                ]);
+                break;
+
+            case 'last_30_days':
+                $query->whereBetween('update_date', [
+                    $today->copy()->subDays(29)->toDateString(),
+                    $today->toDateString(),
+                ]);
+                break;
+
+            case 'this_month':
+                $query->whereBetween('update_date', [
+                    $today->copy()->startOfMonth()->toDateString(),
+                    $today->toDateString(),
+                ]);
+                break;
+
+            case 'all_time':
+            default:
+                break;
+        }
+
+        if (!empty($validated['status'])) {
+            $query->where('status', $validated['status']);
+        }
+
+        $perPage = $validated['per_page'] ?? 15;
+
+        $dailyUpdates = $query
+            ->orderByDesc('update_date')
+            ->orderByDesc('created_at')
+            ->paginate($perPage)
+            ->withQueryString();
+
+        $todayQuery = DailyUpdate::query()
+            ->where('employee_id', $employee->id)
+            ->whereDate('update_date', $today->toDateString());
+
+        return response()->json([
+            'message' => 'Daily updates retrieved successfully.',
+
+            'filters' => [
+                'date_range' => $dateRange,
+                'status' => $validated['status'] ?? null,
+            ],
+
+            'statistics' => [
+                'total_updates' => (clone $todayQuery)->count(),
+
+                'reviewed_updates' => (clone $todayQuery)
+                    ->where('status', 'reviewed')
+                    ->count(),
+
+                'pending_updates' => (clone $todayQuery)
+                    ->where(function ($query) {
+                        $query->whereNull('status')
+                            ->orWhere('status', 'pending');
+                    })
+                    ->count(),
+
+                'hours_spent' => (float) (clone $todayQuery)
+                    ->sum('hours_spent'),
+
+                'active_blockers' => (clone $todayQuery)
+                    ->whereNotNull('blocker_details')
+                    ->where('blocker_details', '!=', '')
+                    ->whereNull('blocker_acknowledged_at')
+                    ->count(),
+            ],
+
+            'data' => DailyUpdateResource::collection(
+                $dailyUpdates->getCollection()
+            ),
+
+            'meta' => [
+                'current_page' => $dailyUpdates->currentPage(),
+                'last_page' => $dailyUpdates->lastPage(),
+                'per_page' => $dailyUpdates->perPage(),
+                'total' => $dailyUpdates->total(),
+            ],
+        ]);
+    }
+
+    /**
+     * Display one daily update belonging to the authenticated employee.
+     */
+    public function show(Request $request, int $id): JsonResponse
+    {
+        $employee = $request->user();
+
+        if (!$employee instanceof User) {
+            return response()->json([
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
+
+        abort_unless(
+            $employee->role === 'employee',
+            403,
+            'Only employees can view their daily updates.'
+        );
+
+        $dailyUpdate = DailyUpdate::query()
+            ->where('employee_id', $employee->id)
+            ->with([
+                'employee',
+                'project',
+                'task',
+                'reviewer',
+                'blockerAcknowledgedBy',
+            ])
+            ->findOrFail($id);
 
         return response()->json([
             'message' => 'Daily update retrieved successfully.',
-            'daily_update' => new DailyUpdateResource($dailyUpdate),
+            'data' => new DailyUpdateResource($dailyUpdate),
         ]);
     }
 }

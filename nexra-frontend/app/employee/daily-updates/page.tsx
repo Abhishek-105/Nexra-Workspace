@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -38,6 +39,13 @@ type DailyUpdate = {
     task?: Task | null;
 };
 
+type PaginationMeta = {
+    current_page?: number;
+    last_page?: number;
+    per_page?: number;
+    total?: number;
+};
+
 type ApiResponse = {
     message?: string;
     daily_updates?: DailyUpdate[] | { data?: DailyUpdate[] };
@@ -47,7 +55,28 @@ type ApiResponse = {
         | {
               data?: DailyUpdate[];
           };
+    meta?: PaginationMeta;
 };
+
+type DateRange =
+    | "today"
+    | "yesterday"
+    | "last_7_days"
+    | "last_30_days"
+    | "this_month"
+    | "all_time";
+
+const DATE_RANGE_OPTIONS: {
+    value: DateRange;
+    label: string;
+}[] = [
+    { value: "today", label: "Today" },
+    { value: "yesterday", label: "Yesterday" },
+    { value: "last_7_days", label: "Last 7 Days" },
+    { value: "last_30_days", label: "Last 30 Days" },
+    { value: "this_month", label: "This Month" },
+    { value: "all_time", label: "All Time" },
+];
 
 function extractUpdates(response: ApiResponse): DailyUpdate[] {
     if (Array.isArray(response.daily_updates)) {
@@ -130,7 +159,12 @@ function formatDate(date?: string | null): string {
         return "No date";
     }
 
-    const parsed = new Date(date);
+    // Avoid timezone shifts when update_date is a YYYY-MM-DD value.
+    const dateOnly = date.match(/^\d{4}-\d{2}-\d{2}$/);
+
+    const parsed = dateOnly
+        ? new Date(`${date}T12:00:00`)
+        : new Date(date);
 
     if (Number.isNaN(parsed.getTime())) {
         return "No date";
@@ -286,6 +320,55 @@ function AlertIcon() {
     );
 }
 
+function Pagination({
+    currentPage,
+    lastPage,
+    onPageChange,
+}: {
+    currentPage: number;
+    lastPage: number;
+    onPageChange: (page: number) => void;
+}) {
+    if (lastPage <= 1) {
+        return null;
+    }
+
+    return (
+        <div className="flex flex-col gap-3 border-t border-[#E8EDEA] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+            <p className="text-xs text-[#6B7770]">
+                Page{" "}
+                <span className="font-bold text-[#18201C]">
+                    {currentPage}
+                </span>{" "}
+                of{" "}
+                <span className="font-bold text-[#18201C]">
+                    {lastPage}
+                </span>
+            </p>
+
+            <div className="flex items-center gap-2">
+                <button
+                    type="button"
+                    disabled={currentPage <= 1}
+                    onClick={() => onPageChange(currentPage - 1)}
+                    className="rounded-lg border border-[#E1E7E3] px-3 py-2 text-xs font-semibold text-[#37443C] transition hover:bg-[#F5F7F6] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                    Previous
+                </button>
+
+                <button
+                    type="button"
+                    disabled={currentPage >= lastPage}
+                    onClick={() => onPageChange(currentPage + 1)}
+                    className="rounded-lg bg-[#166534] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#14532D] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                    Next
+                </button>
+            </div>
+        </div>
+    );
+}
+
 export default function EmployeeDailyUpdatesPage() {
     const [updates, setUpdates] = useState<DailyUpdate[]>([]);
     const [loading, setLoading] = useState(true);
@@ -294,6 +377,15 @@ export default function EmployeeDailyUpdatesPage() {
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [blockerFilter, setBlockerFilter] = useState("all");
+
+    const [dateRange, setDateRange] = useState<DateRange>("all_time");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pagination, setPagination] = useState<PaginationMeta>({
+        current_page: 1,
+        last_page: 1,
+        per_page: 15,
+        total: 0,
+    });
 
     const getToken = () => {
         if (typeof window === "undefined") {
@@ -316,14 +408,26 @@ export default function EmployeeDailyUpdatesPage() {
                 );
             }
 
+            const params = new URLSearchParams({
+                date_range: dateRange,
+                page: String(currentPage),
+                per_page: "15",
+            });
+
             const response = await apiFetch<ApiResponse>(
-                "/employee/daily-updates",
-                {
-                    token,
-                }
+                `/employee/daily-updates?${params.toString()}`,
+                { token }
             );
 
             setUpdates(extractUpdates(response));
+
+            setPagination({
+                current_page:
+                    response.meta?.current_page ?? currentPage,
+                last_page: response.meta?.last_page ?? 1,
+                per_page: response.meta?.per_page ?? 15,
+                total: response.meta?.total ?? extractUpdates(response).length,
+            });
         } catch (err) {
             setError(
                 err instanceof Error
@@ -333,11 +437,18 @@ export default function EmployeeDailyUpdatesPage() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [dateRange, currentPage]);
 
     useEffect(() => {
         loadUpdates();
     }, [loadUpdates]);
+
+    const handleDateRangeChange = (
+        value: DateRange
+    ) => {
+        setDateRange(value);
+        setCurrentPage(1);
+    };
 
     const filteredUpdates = useMemo(() => {
         const searchTerm = search.trim().toLowerCase();
@@ -389,8 +500,10 @@ export default function EmployeeDailyUpdatesPage() {
         blockerFilter,
     ]);
 
-    const totalCount = updates.length;
+    // The backend total covers every matching record in the selected date range.
+    const totalCount = pagination.total ?? updates.length;
 
+    // These statistics describe the currently loaded API page.
     const reviewedCount = updates.filter((update) =>
         isReviewed(update)
     ).length;
@@ -412,6 +525,16 @@ export default function EmployeeDailyUpdatesPage() {
                 : total + hours;
         },
         0
+    );
+
+    const firstVisibleRecord =
+        totalCount === 0
+            ? 0
+            : (currentPage - 1) * (pagination.per_page ?? 15) + 1;
+
+    const lastVisibleRecord = Math.min(
+        currentPage * (pagination.per_page ?? 15),
+        totalCount
     );
 
     if (loading) {
@@ -489,9 +612,7 @@ export default function EmployeeDailyUpdatesPage() {
                             <div className="min-w-0">
                                 <div className="flex items-center gap-2 text-xs font-medium text-[#A4AEA8]">
                                     <span>Workspace</span>
-                                    <span className="text-[#657169]">
-                                        /
-                                    </span>
+                                    <span className="text-[#657169]">/</span>
                                     <span className="text-[#D6DDD9]">
                                         Daily Updates
                                     </span>
@@ -526,6 +647,37 @@ export default function EmployeeDailyUpdatesPage() {
                     </div>
                 </section>
 
+                {/* Date Range */}
+                <section className="flex flex-col gap-3 rounded-2xl border border-[#E1E7E3] bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 className="text-sm font-bold text-[#18201C]">
+                            Reporting Period
+                        </h2>
+                        <p className="mt-0.5 text-xs text-[#6B7770]">
+                            Choose the period for your update history.
+                        </p>
+                    </div>
+
+                    <select
+                        value={dateRange}
+                        onChange={(event) =>
+                            handleDateRangeChange(
+                                event.target.value as DateRange
+                            )
+                        }
+                        className="h-10 w-full rounded-xl border border-[#E1E7E3] bg-[#F5F7F6] px-3 text-sm font-semibold text-[#18201C] outline-none transition focus:border-[#166534] focus:bg-white sm:w-56"
+                    >
+                        {DATE_RANGE_OPTIONS.map((option) => (
+                            <option
+                                key={option.value}
+                                value={option.value}
+                            >
+                                {option.label}
+                            </option>
+                        ))}
+                    </select>
+                </section>
+
                 {/* Statistics */}
                 <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     <div className="rounded-2xl border border-[#E1E7E3] bg-white p-4 shadow-sm">
@@ -534,13 +686,11 @@ export default function EmployeeDailyUpdatesPage() {
                                 <p className="text-[11px] font-bold uppercase tracking-wider text-[#8A958F]">
                                     Total Updates
                                 </p>
-
                                 <p className="mt-1.5 text-2xl font-black text-[#18201C]">
                                     {totalCount}
                                 </p>
-
                                 <p className="mt-0.5 text-xs text-[#6B7770]">
-                                    Submitted updates
+                                    In selected period
                                 </p>
                             </div>
 
@@ -556,13 +706,11 @@ export default function EmployeeDailyUpdatesPage() {
                                 <p className="text-[11px] font-bold uppercase tracking-wider text-[#8A958F]">
                                     Reviewed
                                 </p>
-
                                 <p className="mt-1.5 text-2xl font-black text-[#166534]">
                                     {reviewedCount}
                                 </p>
-
                                 <p className="mt-0.5 text-xs text-[#6B7770]">
-                                    Reviewed by manager
+                                    On this page
                                 </p>
                             </div>
 
@@ -590,13 +738,11 @@ export default function EmployeeDailyUpdatesPage() {
                                 <p className="text-[11px] font-bold uppercase tracking-wider text-[#8A958F]">
                                     Pending
                                 </p>
-
                                 <p className="mt-1.5 text-2xl font-black text-amber-600">
                                     {pendingCount}
                                 </p>
-
                                 <p className="mt-0.5 text-xs text-[#6B7770]">
-                                    Awaiting review
+                                    On this page
                                 </p>
                             </div>
 
@@ -624,13 +770,11 @@ export default function EmployeeDailyUpdatesPage() {
                                 <p className="text-[11px] font-bold uppercase tracking-wider text-[#8A958F]">
                                     Logged Hours
                                 </p>
-
                                 <p className="mt-1.5 text-2xl font-black text-[#18201C]">
                                     {totalHours}
                                 </p>
-
                                 <p className="mt-0.5 text-xs text-[#6B7770]">
-                                    Total submitted hours
+                                    On this page
                                 </p>
                             </div>
 
@@ -663,10 +807,9 @@ export default function EmployeeDailyUpdatesPage() {
                         <div>
                             <p className="text-sm font-bold text-amber-800">
                                 {blockerCount} update
-                                {blockerCount === 1 ? "" : "s"} contain
-                                blocker information.
+                                {blockerCount === 1 ? "" : "s"} on this page
+                                contain blocker information.
                             </p>
-
                             <p className="mt-0.5 text-xs text-amber-700">
                                 Open an update to review the blocker and any
                                 manager response.
@@ -677,14 +820,13 @@ export default function EmployeeDailyUpdatesPage() {
 
                 {/* Filters */}
                 <section className="rounded-2xl border border-[#E1E7E3] bg-white p-4 shadow-sm">
-                    <div className="mb-3 flex items-center justify-between">
+                    <div className="mb-3 flex items-center justify-between gap-3">
                         <div>
                             <p className="text-sm font-bold text-[#18201C]">
                                 Update History
                             </p>
-
                             <p className="mt-0.5 text-xs text-[#6B7770]">
-                                Search and filter your submitted updates.
+                                Search and filter updates on the current page.
                             </p>
                         </div>
 
@@ -698,7 +840,7 @@ export default function EmployeeDailyUpdatesPage() {
                                     setStatusFilter("all");
                                     setBlockerFilter("all");
                                 }}
-                                className="text-xs font-bold text-[#166534] transition hover:text-[#14532D]"
+                                className="shrink-0 text-xs font-bold text-[#166534] transition hover:text-[#14532D]"
                             >
                                 Clear filters
                             </button>
@@ -729,25 +871,15 @@ export default function EmployeeDailyUpdatesPage() {
                             }
                             className="h-10 rounded-xl border border-[#E1E7E3] bg-[#F5F7F6] px-3 text-sm font-medium text-[#18201C] outline-none transition focus:border-[#166534] focus:bg-white"
                         >
-                            <option value="all">
-                                All Statuses
-                            </option>
-
-                            <option value="pending">
-                                Pending
-                            </option>
-
-                            <option value="submitted">
-                                Submitted
-                            </option>
-
-                            <option value="reviewed">
-                                Reviewed
-                            </option>
-
-                            <option value="approved">
-                                Approved
-                            </option>
+                            <option value="all">All Statuses</option>
+                            <option value="pending">Pending</option>
+                            <option value="submitted">Submitted</option>
+                            <option value="in progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                            <option value="blocked">Blocked</option>
+                            <option value="reviewed">Reviewed</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
                         </select>
 
                         <select
@@ -757,35 +889,26 @@ export default function EmployeeDailyUpdatesPage() {
                             }
                             className="h-10 rounded-xl border border-[#E1E7E3] bg-[#F5F7F6] px-3 text-sm font-medium text-[#18201C] outline-none transition focus:border-[#166534] focus:bg-white"
                         >
-                            <option value="all">
-                                All Updates
-                            </option>
-
-                            <option value="yes">
-                                Has Blocker
-                            </option>
-
-                            <option value="no">
-                                No Blocker
-                            </option>
+                            <option value="all">All Updates</option>
+                            <option value="yes">Has Blocker</option>
+                            <option value="no">No Blocker</option>
                         </select>
                     </div>
                 </section>
 
                 {/* Updates */}
                 <section className="overflow-hidden rounded-2xl border border-[#E1E7E3] bg-white shadow-sm">
-                    <div className="flex items-center justify-between border-b border-[#E8EDEA] px-4 py-3.5 sm:px-5">
+                    <div className="flex items-center justify-between gap-3 border-b border-[#E8EDEA] px-4 py-3.5 sm:px-5">
                         <div>
                             <h2 className="text-base font-bold text-[#18201C]">
                                 Submitted Updates
                             </h2>
-
                             <p className="mt-0.5 text-xs text-[#6B7770]">
                                 {filteredUpdates.length}{" "}
                                 {filteredUpdates.length === 1
-                                    ? "update"
-                                    : "updates"}{" "}
-                                shown
+                                    ? "matching update"
+                                    : "matching updates"}{" "}
+                                on this page
                             </p>
                         </div>
 
@@ -801,18 +924,18 @@ export default function EmployeeDailyUpdatesPage() {
                             </div>
 
                             <h3 className="mt-4 font-bold text-[#18201C]">
-                                {updates.length === 0
-                                    ? "No daily updates yet"
-                                    : "No matching updates"}
+                                {totalCount === 0
+                                    ? "No daily updates in this period"
+                                    : "No matching updates on this page"}
                             </h3>
 
                             <p className="mx-auto mt-1.5 max-w-md text-sm leading-6 text-[#6B7770]">
-                                {updates.length === 0
-                                    ? "Submit your first daily standup update to keep your manager informed."
-                                    : "Try changing your search or filters."}
+                                {totalCount === 0
+                                    ? "Try another date range or submit a new daily update."
+                                    : "Try changing your search or filters, or move to another page."}
                             </p>
 
-                            {updates.length === 0 && (
+                            {totalCount === 0 && (
                                 <Link
                                     href="/employee/daily-updates/create"
                                     className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#166534] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#14532D]"
@@ -874,7 +997,6 @@ export default function EmployeeDailyUpdatesPage() {
                                                         <span className="hidden text-[#B0BAB5] sm:inline">
                                                             •
                                                         </span>
-
                                                         <p className="truncate text-xs font-semibold text-[#6B7770]">
                                                             Task:{" "}
                                                             {update.task.title}
@@ -893,11 +1015,8 @@ export default function EmployeeDailyUpdatesPage() {
                                                     <p className="text-[10px] font-bold uppercase tracking-wider text-[#166534]">
                                                         Manager Comment
                                                     </p>
-
                                                     <p className="mt-0.5 line-clamp-1 text-xs leading-5 text-[#36533F]">
-                                                        {
-                                                            update.manager_comment
-                                                        }
+                                                        {update.manager_comment}
                                                     </p>
                                                 </div>
                                             )}
@@ -908,7 +1027,6 @@ export default function EmployeeDailyUpdatesPage() {
                                                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#8A958F]">
                                                     Hours
                                                 </p>
-
                                                 <p className="mt-0.5 text-sm font-bold text-[#18201C]">
                                                     {formatHours(
                                                         update.hours_spent
@@ -924,6 +1042,26 @@ export default function EmployeeDailyUpdatesPage() {
                                     </div>
                                 </Link>
                             ))}
+                        </div>
+                    )}
+
+                    {totalCount > 0 && (
+                        <Pagination
+                            currentPage={pagination.current_page ?? currentPage}
+                            lastPage={pagination.last_page ?? 1}
+                            onPageChange={setCurrentPage}
+                        />
+                    )}
+
+                    {totalCount > 0 && (
+                        <div className="border-t border-[#E8EDEA] px-4 py-3 text-center text-xs text-[#6B7770] sm:px-5">
+                            Showing {firstVisibleRecord}–{lastVisibleRecord} of{" "}
+                            {totalCount} updates for{" "}
+                            {
+                                DATE_RANGE_OPTIONS.find(
+                                    (option) => option.value === dateRange
+                                )?.label
+                            }
                         </div>
                     )}
                 </section>

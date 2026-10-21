@@ -29,14 +29,15 @@ class DailyUpdateController extends Controller
         $weekStart = Carbon::now()->startOfWeek();
         $weekEnd = Carbon::now()->endOfWeek();
 
-        $view = $request->input('view', 'today');
+        // Show all updates by default instead of today's updates only.
+        $view = $request->input('view', 'all');
 
         if (!in_array(
             $view,
             ['today', 'pending', 'blockers', 'week', 'all'],
             true
         )) {
-            $view = 'today';
+            $view = 'all';
         }
 
         $query = DailyUpdate::query()
@@ -48,38 +49,45 @@ class DailyUpdateController extends Controller
                 'blockerAcknowledgedBy',
             ]);
 
-        if ($view === 'today') {
-            $query->whereDate(
-                'update_date',
-                $today->toDateString()
-            );
-        }
-
-        if ($view === 'pending') {
-            $query
-                ->where(function ($query): void {
-                    $query
-                        ->whereNull('status')
-                        ->orWhere('status', 'pending');
-                })
-                ->whereDate(
+        switch ($view) {
+            case 'today':
+                $query->whereDate(
                     'update_date',
-                    '<=',
                     $today->toDateString()
                 );
-        }
+                break;
 
-        if ($view === 'blockers') {
-            $query
-                ->whereNotNull('blocker_details')
-                ->where('blocker_details', '!=', '');
-        }
+            case 'pending':
+                $query
+                    ->where(function ($query): void {
+                        $query
+                            ->whereNull('status')
+                            ->orWhere('status', 'pending');
+                    })
+                    ->whereDate(
+                        'update_date',
+                        '<=',
+                        $today->toDateString()
+                    );
+                break;
 
-        if ($view === 'week') {
-            $query->whereBetween('update_date', [
-                $weekStart->toDateString(),
-                $weekEnd->toDateString(),
-            ]);
+            case 'blockers':
+                $query
+                    ->whereNotNull('blocker_details')
+                    ->where('blocker_details', '!=', '');
+                break;
+
+            case 'week':
+                $query->whereBetween('update_date', [
+                    $weekStart->toDateString(),
+                    $weekEnd->toDateString(),
+                ]);
+                break;
+
+            case 'all':
+            default:
+                // Intentionally do not restrict the update date.
+                break;
         }
 
         if ($request->filled('employee_id')) {
@@ -105,9 +113,7 @@ class DailyUpdateController extends Controller
                         ->whereNull('status')
                         ->orWhere('status', 'pending');
                 });
-            }
-
-            if ($status === 'reviewed') {
+            } elseif ($status === 'reviewed') {
                 $query->where('status', 'reviewed');
             }
         }
@@ -119,23 +125,23 @@ class DailyUpdateController extends Controller
                 ->whereNull('blocker_acknowledged_at');
         }
 
+        /*
+         * The current frontend does not implement pagination.
+         * Return every matching update so older submissions are visible too.
+         */
         $updates = $query
-            ->latest('update_date')
-            ->latest('created_at')
-            ->paginate(15)
-            ->withQueryString();
+            ->orderByDesc('update_date')
+            ->orderByDesc('created_at')
+            ->get();
 
         /*
         |--------------------------------------------------------------------------
-        | Today Metrics
+        | Today's metrics
         |--------------------------------------------------------------------------
         */
 
         $todayQuery = DailyUpdate::query()
-            ->whereDate(
-                'update_date',
-                $today->toDateString()
-            );
+            ->whereDate('update_date', $today->toDateString());
 
         $totalSubmittedToday = (clone $todayQuery)->count();
 
@@ -164,7 +170,7 @@ class DailyUpdateController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Week Metrics
+        | This week's metrics
         |--------------------------------------------------------------------------
         */
 
@@ -177,7 +183,7 @@ class DailyUpdateController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Employees
+        | Employees and missing submissions
         |--------------------------------------------------------------------------
         */
 
@@ -192,19 +198,13 @@ class DailyUpdateController extends Controller
             ]);
 
         $submittedEmployeeIdsToday = DailyUpdate::query()
-            ->whereDate(
-                'update_date',
-                $today->toDateString()
-            )
+            ->whereDate('update_date', $today->toDateString())
             ->pluck('employee_id')
             ->unique()
             ->values();
 
         $missingUpdates = $employees
-            ->whereNotIn(
-                'id',
-                $submittedEmployeeIdsToday
-            )
+            ->whereNotIn('id', $submittedEmployeeIdsToday)
             ->values();
 
         /*
@@ -242,9 +242,7 @@ class DailyUpdateController extends Controller
 
             'employees' => UserResource::collection($employees),
 
-            'missing_updates' => UserResource::collection(
-                $missingUpdates
-            ),
+            'missing_updates' => UserResource::collection($missingUpdates),
 
             'projects' => ProjectResource::collection($projects),
 
@@ -293,7 +291,6 @@ class DailyUpdateController extends Controller
         $dailyUpdate->status = 'reviewed';
         $dailyUpdate->reviewed_by = (int) $manager->getAuthIdentifier();
         $dailyUpdate->reviewed_at = Carbon::now();
-
         $dailyUpdate->save();
 
         $dailyUpdate->load([
@@ -332,7 +329,6 @@ class DailyUpdateController extends Controller
             (int) $manager->getAuthIdentifier();
 
         $dailyUpdate->blocker_acknowledged_at = Carbon::now();
-
         $dailyUpdate->save();
 
         $dailyUpdate->load([

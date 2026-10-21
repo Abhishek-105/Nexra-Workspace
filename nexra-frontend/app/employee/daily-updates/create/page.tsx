@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -160,18 +161,11 @@ export default function EmployeeDailyUpdateCreatePage() {
 
     useEffect(() => {
         const today = new Date();
-
         const year = today.getFullYear();
-        const month = String(
-            today.getMonth() + 1
-        ).padStart(2, "0");
-        const day = String(
-            today.getDate()
-        ).padStart(2, "0");
+        const month = String(today.getMonth() + 1).padStart(2, "0");
+        const day = String(today.getDate()).padStart(2, "0");
 
-        setUpdateDate(
-            `${year}-${month}-${day}`
-        );
+        setUpdateDate(`${year}-${month}-${day}`);
     }, []);
 
     useEffect(() => {
@@ -188,21 +182,13 @@ export default function EmployeeDailyUpdateCreatePage() {
                     );
                 }
 
-                const response =
-                    await apiFetch<CreateResponse>(
-                        "/employee/daily-updates/create",
-                        {
-                            token,
-                        }
-                    );
-
-                setProjects(
-                    extractProjects(response)
+                const response = await apiFetch<CreateResponse>(
+                    "/employee/daily-updates/create",
+                    { token }
                 );
 
-                setTasks(
-                    extractTasks(response)
-                );
+                setProjects(extractProjects(response));
+                setTasks(extractTasks(response));
             } catch (err) {
                 setError(
                     err instanceof Error
@@ -217,17 +203,13 @@ export default function EmployeeDailyUpdateCreatePage() {
         loadFormData();
     }, []);
 
-    const selectedProjectTasks =
-        tasks.filter((task) => {
-            if (!projectId) {
-                return true;
-            }
+    const selectedProjectTasks = tasks.filter((task) => {
+        if (!projectId) {
+            return true;
+        }
 
-            return (
-                Number(task.project_id) ===
-                Number(projectId)
-            );
-        });
+        return Number(task.project_id) === Number(projectId);
+    });
 
     const submitUpdate = async (
         event: React.FormEvent<HTMLFormElement>
@@ -242,44 +224,32 @@ export default function EmployeeDailyUpdateCreatePage() {
         setSuccess("");
 
         if (!projectId) {
-            setError(
-                "Please select a project."
-            );
+            setError("Please select a project.");
             return;
         }
 
         if (!workDescription.trim()) {
-            setError(
-                "Please describe the work you accomplished."
-            );
+            setError("Please describe the work you accomplished.");
             return;
         }
 
-        const numericHours =
-            Number(hoursSpent);
+        const numericHours = Number(hoursSpent);
 
         if (
-            hoursSpent === "" ||
-            Number.isNaN(numericHours) ||
-            numericHours < 0
+            hoursSpent.trim() === "" ||
+            !Number.isFinite(numericHours) ||
+            numericHours <= 0
         ) {
-            setError(
-                "Please enter valid hours spent."
-            );
+            setError("Please enter valid hours spent.");
             return;
         }
 
         if (numericHours > 24) {
-            setError(
-                "Hours spent cannot be greater than 24 hours."
-            );
+            setError("Hours spent cannot be greater than 24 hours.");
             return;
         }
 
-        if (
-            hasBlocker &&
-            !blockerDetails.trim()
-        ) {
+        if (hasBlocker && !blockerDetails.trim()) {
             setError(
                 "Please describe the blocker or turn off the blocker option."
             );
@@ -299,19 +269,20 @@ export default function EmployeeDailyUpdateCreatePage() {
 
             const payload = {
                 project_id: Number(projectId),
-                task_id: taskId
-                    ? Number(taskId)
-                    : null,
+                task_id: taskId ? Number(taskId) : null,
                 update_date: updateDate,
-                work_description:
-                    workDescription.trim(),
+                work_description: workDescription.trim(),
                 hours_spent: numericHours,
+
+                // Default status; the form has no status dropdown.
+                status: "pending",
+
                 blocker_details: hasBlocker
                     ? blockerDetails.trim()
                     : null,
+
                 plans_for_tomorrow:
-                    plansForTomorrow.trim() ||
-                    null,
+                    plansForTomorrow.trim() || null,
             };
 
             await apiFetch(
@@ -319,20 +290,14 @@ export default function EmployeeDailyUpdateCreatePage() {
                 {
                     method: "POST",
                     token,
-                    body: JSON.stringify(
-                        payload
-                    ),
+                    body: JSON.stringify(payload),
                 }
             );
 
-            setSuccess(
-                "Daily update submitted successfully."
-            );
+            setSuccess("Daily update submitted successfully.");
 
             setTimeout(() => {
-                router.push(
-                    "/employee/daily-updates"
-                );
+                router.push("/employee/daily-updates");
             }, 700);
         } catch (err) {
             setError(
@@ -350,19 +315,15 @@ export default function EmployeeDailyUpdateCreatePage() {
             <main className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8">
                 <div className="mx-auto max-w-5xl space-y-6">
                     <div className="h-8 w-36 animate-pulse rounded-lg bg-slate-200" />
-
                     <div className="h-44 animate-pulse rounded-3xl bg-slate-200" />
-
                     <div className="rounded-3xl bg-white p-6 sm:p-8">
                         <div className="space-y-5">
-                            {[1, 2, 3, 4, 5].map(
-                                (item) => (
-                                    <div
-                                        key={item}
-                                        className="h-14 animate-pulse rounded-xl bg-slate-100"
-                                    />
-                                )
-                            )}
+                            {[1, 2, 3, 4, 5].map((item) => (
+                                <div
+                                    key={item}
+                                    className="h-14 animate-pulse rounded-xl bg-slate-100"
+                                />
+                            ))}
                         </div>
                     </div>
                 </div>
@@ -391,7 +352,6 @@ export default function EmployeeDailyUpdateCreatePage() {
                                 d="m15 19-7-7 7-7"
                             />
                         </svg>
-
                         Back to Daily Updates
                     </Link>
                 </div>
@@ -435,7 +395,6 @@ export default function EmployeeDailyUpdateCreatePage() {
                         <h2 className="text-lg font-bold text-slate-900">
                             Work Summary
                         </h2>
-
                         <p className="mt-1 text-sm text-slate-500">
                             Tell your manager what you worked on today.
                         </p>
@@ -449,51 +408,38 @@ export default function EmployeeDailyUpdateCreatePage() {
                                     className="mb-2 block text-sm font-bold text-slate-800"
                                 >
                                     Project
-                                    <span className="ml-1 text-rose-500">
-                                        *
-                                    </span>
+                                    <span className="ml-1 text-rose-500">*</span>
                                 </label>
 
                                 <select
                                     id="project"
                                     value={projectId}
                                     onChange={(event) => {
-                                        setProjectId(
-                                            event.target.value
-                                        );
+                                        setProjectId(event.target.value);
                                         setTaskId("");
                                     }}
                                     required
                                     className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-slate-400 focus:bg-white focus:ring-4 focus:ring-slate-100"
                                 >
-                                    <option value="">
-                                        Select a project
-                                    </option>
+                                    <option value="">Select a project</option>
 
-                                    {projects.map(
-                                        (project) => (
-                                            <option
-                                                key={project.id}
-                                                value={project.id}
-                                            >
-                                                {getProjectName(
-                                                    project
-                                                )}
-
-                                                {project.status
-                                                    ? ` — ${normalizeStatus(
-                                                          project.status
-                                                      )}`
-                                                    : ""}
-                                            </option>
-                                        )
-                                    )}
+                                    {projects.map((project) => (
+                                        <option
+                                            key={project.id}
+                                            value={project.id}
+                                        >
+                                            {getProjectName(project)}
+                                            {project.status
+                                                ? ` — ${normalizeStatus(project.status)}`
+                                                : ""}
+                                        </option>
+                                    ))}
                                 </select>
 
                                 {projects.length === 0 && (
                                     <p className="mt-2 text-xs text-amber-600">
-                                        No projects are currently
-                                        available for daily updates.
+                                        No projects are currently available for
+                                        daily updates.
                                     </p>
                                 )}
                             </div>
@@ -513,9 +459,7 @@ export default function EmployeeDailyUpdateCreatePage() {
                                     id="task"
                                     value={taskId}
                                     onChange={(event) =>
-                                        setTaskId(
-                                            event.target.value
-                                        )
+                                        setTaskId(event.target.value)
                                     }
                                     disabled={!projectId}
                                     className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-slate-400 focus:bg-white focus:ring-4 focus:ring-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
@@ -526,8 +470,13 @@ export default function EmployeeDailyUpdateCreatePage() {
                                             : "Select a project first"}
                                     </option>
 
-                                    {selectedProjectTasks.map(
-                                        (task) => (
+                                    {selectedProjectTasks
+                                        .filter(
+                                            (task) =>
+                                                Number(task.project_id) ===
+                                                Number(projectId)
+                                        )
+                                        .map((task) => (
                                             <option
                                                 key={task.id}
                                                 value={task.id}
@@ -535,16 +484,18 @@ export default function EmployeeDailyUpdateCreatePage() {
                                                 {task.title ||
                                                     `Task #${task.id}`}
                                             </option>
-                                        )
-                                    )}
+                                        ))}
                                 </select>
 
                                 {projectId &&
-                                    selectedProjectTasks.length ===
-                                        0 && (
+                                    selectedProjectTasks.filter(
+                                        (task) =>
+                                            Number(task.project_id) ===
+                                            Number(projectId)
+                                    ).length === 0 && (
                                         <p className="mt-2 text-xs text-slate-400">
-                                            No tasks are available for
-                                            this project.
+                                            No tasks are available for this
+                                            project.
                                         </p>
                                     )}
                             </div>
@@ -557,9 +508,7 @@ export default function EmployeeDailyUpdateCreatePage() {
                                     className="mb-2 block text-sm font-bold text-slate-800"
                                 >
                                     Update Date
-                                    <span className="ml-1 text-rose-500">
-                                        *
-                                    </span>
+                                    <span className="ml-1 text-rose-500">*</span>
                                 </label>
 
                                 <input
@@ -567,9 +516,7 @@ export default function EmployeeDailyUpdateCreatePage() {
                                     type="date"
                                     value={updateDate}
                                     onChange={(event) =>
-                                        setUpdateDate(
-                                            event.target.value
-                                        )
+                                        setUpdateDate(event.target.value)
                                     }
                                     required
                                     className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-slate-400 focus:bg-white focus:ring-4 focus:ring-slate-100"
@@ -582,22 +529,18 @@ export default function EmployeeDailyUpdateCreatePage() {
                                     className="mb-2 block text-sm font-bold text-slate-800"
                                 >
                                     Hours Spent
-                                    <span className="ml-1 text-rose-500">
-                                        *
-                                    </span>
+                                    <span className="ml-1 text-rose-500">*</span>
                                 </label>
 
                                 <input
                                     id="hours"
                                     type="number"
-                                    min="0"
+                                    min="0.1"
                                     max="24"
-                                    step="0.5"
+                                    step="any"
                                     value={hoursSpent}
                                     onChange={(event) =>
-                                        setHoursSpent(
-                                            event.target.value
-                                        )
+                                        setHoursSpent(event.target.value)
                                     }
                                     placeholder="e.g. 7.5"
                                     required
@@ -605,8 +548,7 @@ export default function EmployeeDailyUpdateCreatePage() {
                                 />
 
                                 <p className="mt-2 text-xs text-slate-400">
-                                    Enter the total time spent on today's
-                                    work.
+                                    Enter the total time spent on today's work.
                                 </p>
                             </div>
                         </div>
@@ -617,18 +559,14 @@ export default function EmployeeDailyUpdateCreatePage() {
                                 className="mb-2 block text-sm font-bold text-slate-800"
                             >
                                 Work Accomplished
-                                <span className="ml-1 text-rose-500">
-                                    *
-                                </span>
+                                <span className="ml-1 text-rose-500">*</span>
                             </label>
 
                             <textarea
                                 id="work-description"
                                 value={workDescription}
                                 onChange={(event) =>
-                                    setWorkDescription(
-                                        event.target.value
-                                    )
+                                    setWorkDescription(event.target.value)
                                 }
                                 rows={6}
                                 required
@@ -648,7 +586,6 @@ export default function EmployeeDailyUpdateCreatePage() {
                                 <h2 className="text-lg font-bold text-slate-900">
                                     Blocker
                                 </h2>
-
                                 <p className="mt-1 text-sm text-slate-500">
                                     Let your manager know if something is
                                     blocking your progress.
@@ -660,10 +597,7 @@ export default function EmployeeDailyUpdateCreatePage() {
                                 role="switch"
                                 aria-checked={hasBlocker}
                                 onClick={() =>
-                                    setHasBlocker(
-                                        (current) =>
-                                            !current
-                                    )
+                                    setHasBlocker((current) => !current)
                                 }
                                 className={`relative inline-flex h-7 w-12 shrink-0 rounded-full transition ${
                                     hasBlocker
@@ -673,9 +607,7 @@ export default function EmployeeDailyUpdateCreatePage() {
                             >
                                 <span
                                     className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition ${
-                                        hasBlocker
-                                            ? "left-6"
-                                            : "left-1"
+                                        hasBlocker ? "left-6" : "left-1"
                                     }`}
                                 />
                             </button>
@@ -688,20 +620,17 @@ export default function EmployeeDailyUpdateCreatePage() {
                                     className="mb-2 block text-sm font-bold text-slate-800"
                                 >
                                     What is blocking you?
-                                    <span className="ml-1 text-rose-500">
-                                        *
-                                    </span>
+                                    <span className="ml-1 text-rose-500">*</span>
                                 </label>
 
                                 <textarea
                                     id="blocker"
                                     value={blockerDetails}
                                     onChange={(event) =>
-                                        setBlockerDetails(
-                                            event.target.value
-                                        )
+                                        setBlockerDetails(event.target.value)
                                     }
                                     rows={4}
+                                    required
                                     placeholder="Describe the issue, dependency, access problem or decision you need..."
                                     className="w-full resize-y rounded-2xl border border-amber-200 bg-amber-50/50 px-4 py-3.5 text-sm leading-6 text-slate-700 outline-none transition placeholder:text-amber-400 focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-100"
                                 />
@@ -725,7 +654,6 @@ export default function EmployeeDailyUpdateCreatePage() {
                                         />
                                     </svg>
                                 </div>
-
                                 <p className="text-sm font-medium text-slate-600">
                                     No blocker to report.
                                 </p>
@@ -737,7 +665,6 @@ export default function EmployeeDailyUpdateCreatePage() {
                         <h2 className="text-lg font-bold text-slate-900">
                             Tomorrow's Plan
                         </h2>
-
                         <p className="mt-1 text-sm text-slate-500">
                             Briefly describe what you plan to work on next.
                         </p>
@@ -745,9 +672,7 @@ export default function EmployeeDailyUpdateCreatePage() {
                         <textarea
                             value={plansForTomorrow}
                             onChange={(event) =>
-                                setPlansForTomorrow(
-                                    event.target.value
-                                )
+                                setPlansForTomorrow(event.target.value)
                             }
                             rows={5}
                             placeholder="What do you plan to work on tomorrow?"
@@ -783,20 +708,17 @@ export default function EmployeeDailyUpdateCreatePage() {
                                             stroke="currentColor"
                                             strokeWidth="4"
                                         />
-
                                         <path
                                             className="opacity-75"
                                             fill="currentColor"
                                             d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
                                         />
                                     </svg>
-
                                     Submitting...
                                 </>
                             ) : (
                                 <>
                                     Submit Daily Update
-
                                     <svg
                                         className="h-4 w-4"
                                         viewBox="0 0 24 24"

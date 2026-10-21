@@ -3,6 +3,7 @@ import "./globals.css";
 
 import { AuthProvider } from "../context/AuthContext";
 import AppLayout from "../components/layout/AppLayout";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
     title: "Nexra Workspace",
@@ -23,6 +24,8 @@ export default function RootLayout({
                         {children}
                     </AppLayout>
                 </AuthProvider>
+
+                <SpeedInsights />
             </body>
         </html>
     );
