@@ -1,3 +1,4 @@
+
 FROM php:8.2-apache
 
 WORKDIR /var/www/html
@@ -59,6 +60,7 @@ RUN printf '%s\n' \
 
 RUN printf '%s\n' \
     '#!/bin/sh' \
+    'php artisan config:clear' \
     'php artisan migrate --force' \
     'php artisan storage:link' \
     'exec apache2-foreground' \
