@@ -31,7 +31,7 @@ The application uses a separate **Next.js frontend** and **Laravel REST API**, w
 
 ## 🔗 Live Demo
 
-* **App:** [work-sphere-pi-taupe.vercel.app](https://work-sphere-pi-taupe.vercel.app/)
+* **App:** [nexra-workspace.vercel.app](https://nexra-workspace.vercel.app)
 
 > 🔐 Demo accounts are available for testing both Manager and Employee workflows.
 
