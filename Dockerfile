@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y \
         pcntl \
         zip \
         xml \
-    && a2enmod rewrite \
+    && a2enmod rewrite headers \
     && rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
@@ -53,6 +53,11 @@ RUN printf '%s\n' \
     '        AllowOverride All' \
     '        Require all granted' \
     '    </Directory>' \
+    '    Header always set Access-Control-Allow-Origin "https://nexra-workspace.vercel.app"' \
+    '    Header always set Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"' \
+    '    Header always set Access-Control-Allow-Headers "Accept, Authorization, Content-Type, Origin, X-Requested-With, X-XSRF-TOKEN"' \
+    '    Header always set Access-Control-Max-Age "86400"' \
+    '    Header always merge Vary "Origin"' \
     '    ErrorLog ${APACHE_LOG_DIR}/error.log' \
     '    CustomLog ${APACHE_LOG_DIR}/access.log combined' \
     '</VirtualHost>' \
