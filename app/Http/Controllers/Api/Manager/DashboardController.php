@@ -173,10 +173,12 @@ class DashboardController extends Controller
         |--------------------------------------------------------------------------
         */
 
+        // Count updates reported for today's date.
         $todayUpdates = DailyUpdate::query()
-            ->whereDate('created_at', $today)
+            ->whereDate('update_date', $today->toDateString())
             ->count();
 
+        // Keep the total count across all dates.
         $totalDailyUpdates = DailyUpdate::query()->count();
 
         /*
@@ -185,6 +187,7 @@ class DashboardController extends Controller
         |--------------------------------------------------------------------------
         */
 
+        // Preserve recent history, including updates from previous dates.
         $recentUpdates = DailyUpdate::query()
             ->with([
                 'employee',
