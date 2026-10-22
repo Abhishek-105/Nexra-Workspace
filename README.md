@@ -1,5 +1,4 @@
-# 🚀 WorkSphere
-Also shown as "Nexra Workspace" in the app UI.
+# 🚀 Nexra Workspace
 
 > Employee daily work and project management platform designed to manage teams, projects, tasks, assignments, and daily work updates through role-based Manager and Employee workflows.
 
@@ -24,7 +23,7 @@ Also shown as "Nexra Workspace" in the app UI.
 
 ## 📖 Overview
 
-**WorkSphere** is a full-stack workspace built around a realistic company workflow.
+**Nexra Workspace** is a full-stack workspace built around a realistic company workflow.
 
 Managers can create projects, manage employees, assign tasks, and review daily work updates. Employees can view their assignments, complete tasks, submit daily updates, report blockers, and manage their profiles.
 
@@ -38,12 +37,12 @@ The application uses a separate **Next.js frontend** and **Laravel REST API**, w
 
 ## 🔐 Demo Access
 
-| Role           | Email                          | Password      |
-| -------------- | ------------------------------ | ------------- |
-| 👨‍💼 Manager  | `demo.manager@worksphere.com`  | `Demo@123456` |
+| Role | Email | Password |
+| --- | --- | --- |
+| 👨‍💼 Manager | `demo.manager@worksphere.com` | `Demo@123456` |
 | 👨‍💻 Employee | `demo.employee@worksphere.com` | `Demo@123456` |
 
-> Public registration is intentionally disabled because WorkSphere represents an internal company workspace.
+> Public registration is intentionally disabled because Nexra Workspace represents an internal company workspace.
 
 ## ✨ Features
 
@@ -95,35 +94,35 @@ The application uses a separate **Next.js frontend** and **Laravel REST API**, w
 
 ```text
 Next.js + React + TypeScript
-            │
-            │ REST API
-            ▼
-    Laravel 12 + Sanctum
-            │
-            │ Eloquent ORM
-            ▼
-        PostgreSQL
+           │
+           │ REST API
+           ▼
+   Laravel 12 + Sanctum
+           │
+           │ Eloquent ORM
+           ▼
+       PostgreSQL
 ```
 
 ### Application Flow
 
 ```text
 👨‍💼 Manager
-     │
-     ├── 📁 Creates Projects
-     ├── 📋 Creates Tasks
-     └── 👥 Assigns Employees
-                │
-                ▼
-          👨‍💻 Employee
-                │
-                ├── 🛠️ Completes Work
-                └── 📝 Submits Daily Update
-                           │
-                           ▼
-                      👨‍💼 Manager
-                           │
-                        🔎 Reviews
+    │
+    ├── 📁 Creates Projects
+    ├── 📋 Creates Tasks
+    └── 👥 Assigns Employees
+               │
+               ▼
+         👨‍💻 Employee
+               │
+               ├── 🛠️ Completes Work
+               └── 📝 Submits Daily Update
+                          │
+                          ▼
+                     👨‍💼 Manager
+                          │
+                       🔎 Reviews
 ```
 
 ## 🚀 Getting Started
@@ -139,20 +138,22 @@ Next.js + React + TypeScript
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/Abhishek-105/WorkSphere.git
-cd WorkSphere
+git clone https://github.com/Abhishek-105/Nexra-Workspace.git
+cd Nexra-Workspace
 ```
 
 ### 2. Backend Setup
 
 ```bash
 composer install
-cp .env.example .env        # on Windows use: copy .env.example .env
+cp .env.example .env
 php artisan key:generate
 php artisan migrate
 php artisan storage:link
 php artisan serve
 ```
+
+On Windows CMD, use `copy .env.example .env` instead of `cp .env.example .env`.
 
 Configure your database and application settings in `.env`.
 
@@ -185,7 +186,7 @@ http://localhost:3000
 ## 📂 Project Structure
 
 ```text
-WorkSphere/
+Nexra-Workspace/
 ├── app/
 │   ├── Http/
 │   │   └── Controllers/
@@ -223,7 +224,7 @@ WorkSphere/
 
 ## 🎯 What This Project Demonstrates
 
-WorkSphere demonstrates practical full-stack development across:
+Nexra Workspace demonstrates practical full-stack development across:
 
 **System Architecture → Database Design → REST APIs → Authentication → Authorization → CRUD → Role-Based Workflows → File Handling → Frontend Integration → Docker → Cloud Deployment**
 
